@@ -42,7 +42,7 @@ Saúl Ibarra Corretgé <saghul@gmail.com>
 License
 =======
 
-Evergreen-DNS uses the MIT license, check LICENSE file.
+aiodns uses the MIT license, check LICENSE file.
 
 
 Python versions
