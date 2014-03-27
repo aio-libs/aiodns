@@ -12,9 +12,15 @@ except ImportError:
 def get_version():
     return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('aiodns/__init__.py').read()).group('version')
 
+
 install_requires = ['pycares']
-if sys.version_info < (3, 4):
+if sys.version_info >= (3, 4):
+    pass
+elif sys.version_info >= (3, 3):
     install_requires.append('asyncio')
+else:
+    install_requires.append('trollius')
+
 
 setup(name             = "aiodns",
       version          = get_version(),
@@ -33,6 +39,13 @@ setup(name             = "aiodns",
           "Operating System :: POSIX",
           "Operating System :: Microsoft :: Windows",
           "Programming Language :: Python",
+          "Programming Language :: Python :: 2",
+          "Programming Language :: Python :: 2.6",
+          "Programming Language :: Python :: 2.7",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: Python :: 3.0",
+          "Programming Language :: Python :: 3.1",
+          "Programming Language :: Python :: 3.2",
           "Programming Language :: Python :: 3.3",
           "Programming Language :: Python :: 3.4"
       ]
