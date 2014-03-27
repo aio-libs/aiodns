@@ -29,12 +29,12 @@ query_type_map = {'A'     : pycares.QUERY_TYPE_A,
 class DNSResolver(object):
 
     def __init__(self, nameservers=None, loop=None, **kwargs):
+        self.loop = loop or asyncio.get_event_loop()
+        assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
         self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb, **kwargs)
         if nameservers:
             self._channel.servers = nameservers
-        self.loop = loop or asyncio.get_event_loop()
-        assert self.loop is not None
         self._fds = set()
         self._timer = None
 
