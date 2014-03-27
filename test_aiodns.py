@@ -32,9 +32,10 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
-    #def test_query_cname(self):
-    #    result = self.resolver.query('www.google.com', 'CNAME')
-    #    self.assertTrue(result)
+    def test_query_cname(self):
+        f = self.resolver.query('livechat.ripe.net', 'CNAME')
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
 
     def test_query_mx(self):
         f = self.resolver.query('google.com', 'MX')
