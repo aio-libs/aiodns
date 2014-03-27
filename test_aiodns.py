@@ -73,7 +73,7 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_bad_type(self):
-        self.assertRaises(aiodns.error.DNSError, self.resolver.query, 'google.com', 'XXX')
+        self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')
 
     def test_query_timeout(self):
         self.resolver = aiodns.DNSResolver(timeout=0.1, loop=self.loop)

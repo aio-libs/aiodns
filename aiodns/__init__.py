@@ -50,7 +50,7 @@ class DNSResolver(object):
         try:
             qtype = query_type_map[qtype]
         except KeyError:
-            raise error.DNSError('invalid query type: {}'.format(qtype))
+            raise ValueError('invalid query type: {}'.format(qtype))
         fut = asyncio.Future(loop=self.loop)
         def cb(result, errorno):
             if errorno is not None:
