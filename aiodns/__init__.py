@@ -46,7 +46,6 @@ class DNSResolver(object):
     def nameservers(self, value):
         self._channel.servers = value
 
-    @asyncio.coroutine
     def query(self, host, qtype):
         try:
             qtype = query_type_map[qtype]
@@ -59,7 +58,7 @@ class DNSResolver(object):
             else:
                 fut.set_result(result)
         self._channel.query(host, qtype, cb)
-        return (yield from fut)
+        return fut
 
     def _sock_state_cb(self, fd, readable, writable):
         if readable or writable:
