@@ -48,7 +48,8 @@ aiodns uses the MIT license, check LICENSE file.
 Python versions
 ===============
 
-Python >= 3.3 are supported.
+Python 3.4 is natively supported. Python 3.3 supported using the `asyncio package <https://pypi.python.org/pypi/asyncio>`_.
+Older Python versions(2.6 - 3.2) are supported using `trollius <https://pypi.python.org/pypi/trolliu>`_.
 
 
 Contributing
