@@ -2,7 +2,7 @@
 import asyncio
 import pycares
 
-from aiodns import error
+from . import error
 
 
 __version__ = '0.1.0'
