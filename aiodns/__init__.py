@@ -34,7 +34,7 @@ class DNSResolver(object):
         kwargs.pop('sock_state_cb', None)
         self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb, **kwargs)
         if nameservers:
-            self._channel.servers = nameservers
+            self.nameservers = nameservers
         self._fds = set()
         self._timer = None
 
