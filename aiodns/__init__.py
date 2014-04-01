@@ -38,14 +38,6 @@ class DNSResolver(object):
         self._fds = set()
         self._timer = None
 
-    @property
-    def nameservers(self):
-        return self._channel.servers
-
-    @nameservers.setter
-    def nameservers(self, value):
-        self._channel.servers = value
-
     def query(self, host, qtype):
         try:
             qtype = query_type_map[qtype]
