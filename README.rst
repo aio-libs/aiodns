@@ -30,12 +30,12 @@ The following query types are supported: A, AAAA, CNAME, MX, NAPTR, NS, PTR, SOA
 API
 ===
 
-The API is pretty simple, two functions are provided in the `DNSResolver` class:
+The API is pretty simple, two functions are provided in the ``DNSResolver`` class:
 
-* `query(host, type)`: Do a DNS resolution of the given type for the given hostname. It returns an
-  instance of `asyncio.Future`.
-* `cancel()`: Cancel all pending DNS queries. All futures will get `DNSError` exception set, with
-  `ARES_ECANCELLED` errno.
+* ``query(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
+  instance of ``asyncio.Future``.
+* ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
+  ``ARES_ECANCELLED`` errno.
 
 
 Running the test suite
