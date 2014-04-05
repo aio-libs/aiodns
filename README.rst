@@ -9,10 +9,8 @@ aiodns provides a simple way for doing asynchronous DNS resolutions
 with a synchronous looking interface by using `pycares <https://github.com/saghul/pycares>`_.
 
 
-Usage
-=====
-
-Example:
+Example
+=======
 
 ::
 
@@ -27,6 +25,17 @@ Example:
 
 
 The following query types are supported: A, AAAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
+
+
+API
+===
+
+The API is pretty simple, two functions are provided in the `DNSResolver` class:
+
+* `query(host, type)`: Do a DNS resolution of the given type for the given hostname. It returns an
+  instance of `asyncio.Future`.
+* `cancel()`: Cancel all pending DNS queries. All futures will get `DNSError` exception set, with
+  `ARES_ECANCELLED` errno.
 
 
 Running the test suite
