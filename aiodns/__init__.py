@@ -60,6 +60,9 @@ class DNSResolver(object):
         self._channel.query(host, qtype, cb)
         return fut
 
+    def cancel(self):
+        self._channel.cancel()
+
     def _sock_state_cb(self, fd, readable, writable):
         if readable or writable:
             if readable:

@@ -86,6 +86,14 @@ class DNSTest(unittest.TestCase):
         except aiodns.error.DNSError as e:
             self.assertEqual(e.args[0], aiodns.error.ARES_ETIMEOUT)
 
+    def test_query_cancel(self):
+        f = self.resolver.query('google.com', 'A')
+        self.resolver.cancel()
+        try:
+            self.loop.run_until_complete(f)
+        except aiodns.error.DNSError as e:
+            self.assertEqual(e.args[0], aiodns.error.ARES_ECANCELLED)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
