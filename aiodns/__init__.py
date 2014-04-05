@@ -53,6 +53,8 @@ class DNSResolver(object):
             raise ValueError('invalid query type: {}'.format(qtype))
         fut = asyncio.Future(loop=self.loop)
         def cb(result, errorno):
+            if fut.cancelled():
+                return
             if errorno is not None:
                 fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
             else:

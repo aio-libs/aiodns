@@ -94,6 +94,18 @@ class DNSTest(unittest.TestCase):
         except aiodns.error.DNSError as e:
             self.assertEqual(e.args[0], aiodns.error.ARES_ECANCELLED)
 
+#    def test_future_cancel(self):
+#        # TODO: write this in such a way it also works with trollius
+#        f = self.resolver.query('google.com', 'A')
+#        f.cancel()
+#        def coro():
+#            yield from asyncio.sleep(0.1, loop=self.loop)
+#            yield from f
+#        try:
+#            self.loop.run_until_complete(coro())
+#        except asyncio.CancelledError as e:
+#            self.assertTrue(e)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
