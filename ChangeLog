@@ -1,3 +1,7 @@
+0.3.0
+=====
+- Add DNSResolver.cancel method
+- Handle case when the Future returned by query() is cancelled
 
 0.2.0
 =====
