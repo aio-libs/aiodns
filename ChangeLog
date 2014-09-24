@@ -1,3 +1,8 @@
+0.3.1
+=====
+- Adapt to Trollius package rename
+- Fixed stopping watching file descriptor
+
 0.3.0
 =====
 - Add DNSResolver.cancel method
