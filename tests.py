@@ -5,6 +5,7 @@ try:
 except ImportError:
     import trollius as asyncio
 import unittest
+import sys
 
 import aiodns
 import pycares
@@ -108,6 +109,27 @@ class DNSTest(unittest.TestCase):
 #            self.loop.run_until_complete(coro())
 #        except asyncio.CancelledError as e:
 #            self.assertTrue(e)
+
+    def test_query_twice(self):
+        if sys.version[:3] >= '3.3':
+            exec('''if 1:
+            @asyncio.coroutine
+            def coro(self, host, qtype, n=2):
+                for i in range(n):
+                    result = yield from self.resolver.query(host, qtype)
+                    self.assertTrue(result)
+            ''')
+
+        else:
+            exec('''if 1:
+            @asyncio.coroutine
+            def coro(self, host, qtype, n=2):
+                for i in range(n):
+                    result = yield asyncio.From(self.resolver.query(host, qtype))
+                    self.assertTrue(result)
+            ''')
+
+        self.loop.run_until_complete(locals()['coro'](self, 'gmail.com', 'MX'))
 
 
 if __name__ == '__main__':
