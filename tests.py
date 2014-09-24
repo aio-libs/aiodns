@@ -106,6 +106,16 @@ class DNSTest(unittest.TestCase):
 #        except asyncio.CancelledError as e:
 #            self.assertTrue(e)
 
+    def test_query_twice(self):
+        @asyncio.coroutine
+        def test(host, qtype):
+            result = yield from self.resolver.query(host, qtype)
+            self.assertTrue(result)
+            result = yield from self.resolver.query(host, qtype)
+            self.assertTrue(result)
+
+        self.loop.run_until_complete(test('gmail.com', 'MX'))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
