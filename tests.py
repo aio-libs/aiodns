@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import asyncio
+try:
+    import asyncio
+except ImportError:
+    import trollius as asyncio
 import unittest
 
 import aiodns
