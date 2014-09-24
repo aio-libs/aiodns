@@ -1,5 +1,8 @@
 
-import asyncio
+try:
+    import asyncio
+except ImportError:
+    import trollius as asyncio
 import pycares
 
 from . import error
