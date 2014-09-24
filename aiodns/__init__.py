@@ -1,5 +1,8 @@
 
-import asyncio
+try:
+    import asyncio
+except ImportError:
+    import trollius as asyncio
 import pycares
 
 from . import error
@@ -35,7 +38,8 @@ class DNSResolver(object):
         self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb, **kwargs)
         if nameservers:
             self.nameservers = nameservers
-        self._fds = set()
+        self._read_fds = set()
+        self._write_fds = set()
         self._timer = None
 
     @property
@@ -69,15 +73,23 @@ class DNSResolver(object):
         if readable or writable:
             if readable:
                 self.loop.add_reader(fd, self._handle_event, fd, READ)
+                self._read_fds.add(fd)
             if writable:
                 self.loop.add_writer(fd, self._handle_event, fd, WRITE)
-            self._fds.add(fd)
+                self._write_fds.add(fd)
             if self._timer is None:
                 self._timer = self.loop.call_later(1.0, self._timer_cb)
         else:
             # socket is now closed
-            self._fds.discard(fd)
-            if not self._fds and self._timer is not None:
+            if fd in self._read_fds:
+                self._read_fds.discard(fd)
+                self.loop.remove_reader(fd)
+
+            if fd in self._write_fds:
+                self._write_fds.discard(fd)
+                self.loop.remove_writer(fd)
+
+            if not self._read_fds and not self._write_fds and self._timer is not None:
                 self._timer.cancel()
                 self._timer = None
 
@@ -91,7 +103,7 @@ class DNSResolver(object):
         self._channel.process_fd(read_fd, write_fd)
 
     def _timer_cb(self):
-        if self._fds:
+        if self._read_fds or self._write_fds:
             self._channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
             self._timer = self.loop.call_later(1.0, self._timer_cb)
         else:
