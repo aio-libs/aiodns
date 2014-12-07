@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import codecs
 import re
 import sys
 
@@ -28,7 +29,7 @@ setup(name             = "aiodns",
       author_email     = "saghul@gmail.com",
       url              = "http://github.com/saghul/aiodns",
       description      = "Simple DNS resolver for asyncio",
-      long_description = open("README.rst").read(),
+      long_description = codecs.open("README.rst", encoding="utf-8").read(),
       install_requires = install_requires,
       packages         = ['aiodns'],
       platforms        = ["POSIX", "Microsoft Windows"],
