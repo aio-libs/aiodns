@@ -26,6 +26,19 @@ Example
 
 The following query types are supported: A, AAAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
 
+The library supports both *asyncio* and *Trollius*.
+
+If you use Python 3 you may use `yield from` statement::
+
+    @asyncio.coroutine
+    def func():
+        result = yield from resolver.query('google.com','A')
+
+For Trollius you should use another syntax like::
+
+    @trollius.coroutine
+    def func():
+         result = yield trollius.From(resolver.query('google.com','A'))
 
 API
 ===
