@@ -14,7 +14,7 @@ def get_version():
     return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('aiodns/__init__.py').read()).group('version')
 
 
-install_requires = ['pycares']
+install_requires = ['pycares>=1.0.0']
 if sys.version_info >= (3, 4):
     pass
 elif sys.version_info >= (3, 3):
