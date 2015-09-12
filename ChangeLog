@@ -1,3 +1,8 @@
+1.0.0
+=====
+- Use pycares >= 1.0.0
+- Fix tests
+
 0.3.2
 =====
 - setup: Fix decoding in non-UTF-8 environments
