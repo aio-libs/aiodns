@@ -73,7 +73,7 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_ptr(self):
-        ip = '173.194.69.102'
+        ip = '8.8.8.8'
         f = self.resolver.query(pycares.reverse_address(ip), 'PTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
