@@ -1,5 +1,5 @@
-include README.rst LICENSE
-include setup.py test_aiodns.py
+include README.rst LICENSE ChangeLog
+include setup.py tests.py
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
