@@ -1,3 +1,7 @@
+1.0.1
+=====
+- Fix including tests and ChangeLog in source distributions
+
 1.0.0
 =====
 - Use pycares >= 1.0.0
