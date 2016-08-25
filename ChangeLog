@@ -23,7 +23,7 @@
 
 0.2.0
 =====
-- Addes support for Trollius
+- Add support for Trollius
 - Don't make query() a coroutine, just return the future
 - Raise ValueError if specified query type is invalid
 
