@@ -1,3 +1,4 @@
+import functools
 
 try:
     import asyncio
@@ -50,20 +51,29 @@ class DNSResolver(object):
     def nameservers(self, value):
         self._channel.servers = value
 
+    @staticmethod
+    def _callback(fut, result, errorno):
+        if fut.cancelled():
+            return
+        if errorno is not None:
+            fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
+        else:
+            fut.set_result(result)
+
     def query(self, host, qtype):
         try:
             qtype = query_type_map[qtype]
         except KeyError:
             raise ValueError('invalid query type: {}'.format(qtype))
         fut = asyncio.Future(loop=self.loop)
-        def cb(result, errorno):
-            if fut.cancelled():
-                return
-            if errorno is not None:
-                fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
-            else:
-                fut.set_result(result)
+        cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb)
+        return fut
+
+    def gethostbyname(self, host, family):
+        fut = asyncio.Future(loop=self.loop)
+        cb = functools.partial(self._callback, fut)
+        self._channel.gethostbyname(host, family, cb)
         return fut
 
     def cancel(self):
