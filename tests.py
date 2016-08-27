@@ -16,6 +16,7 @@ class DNSTest(unittest.TestCase):
 
     def setUp(self):
         self.loop = asyncio.new_event_loop()
+        self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
 
     def tearDown(self):
