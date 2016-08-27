@@ -5,6 +5,7 @@ try:
 except ImportError:
     import trollius as asyncio
 import unittest
+import socket
 import sys
 
 import aiodns
@@ -15,6 +16,7 @@ class DNSTest(unittest.TestCase):
 
     def setUp(self):
         self.loop = asyncio.new_event_loop()
+        self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
 
     def tearDown(self):
@@ -130,6 +132,21 @@ class DNSTest(unittest.TestCase):
             ''')
 
         self.loop.run_until_complete(locals()['coro'](self, 'gmail.com', 'MX'))
+
+    def test_gethostbyname(self):
+        f = self.resolver.gethostbyname("google.com", socket.AF_INET)
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+
+    def test_gethostbyname_ipv6(self):
+        f = self.resolver.gethostbyname("ipv6.google.com", socket.AF_INET6)
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+
+    def test_gethostbyname_bad_family(self):
+        f = self.resolver.gethostbyname("ipv6.google.com", -1)
+        with self.assertRaises(aiodns.error.DNSError):
+            self.loop.run_until_complete(f)
 
 
 if __name__ == '__main__':
