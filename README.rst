@@ -56,8 +56,7 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
   ``gethostbyname()`` first looks into ``/etc/hosts`` and thus can resolve
   local hostnames (such as ``localhost``).  Please check `the documentation
   <http://pycares.readthedocs.io/en/latest/channel.html#pycares.Channel.gethostbyname>`_
-  for the result fields.
-  ``asyncio.Future``. The actual result of the call is a
+  for the result fields. The actual result of the call is a ``asyncio.Future``.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
   ``ARES_ECANCELLED`` errno.
 
@@ -83,7 +82,7 @@ aiodns uses the MIT license, check LICENSE file.
 Python versions
 ===============
 
-Python 3.4 is natively supported. Python 3.3 supported using the `asyncio package <https://pypi.python.org/pypi/asyncio>`_.
+Python >= 3.4 is natively supported. Python 3.3 supported using the `asyncio package <https://pypi.python.org/pypi/asyncio>`_.
 Older Python versions(2.6 - 3.2) are supported using `trollius <https://pypi.python.org/pypi/trollius>`_.
 
 
