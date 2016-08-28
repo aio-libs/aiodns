@@ -14,15 +14,6 @@ def get_version():
     return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('aiodns/__init__.py').read()).group('version')
 
 
-install_requires = ['pycares>=1.0.0']
-if sys.version_info >= (3, 4):
-    pass
-elif sys.version_info >= (3, 3):
-    install_requires.append('asyncio')
-else:
-    install_requires.append('trollius')
-
-
 setup(name             = "aiodns",
       version          = get_version(),
       author           = "Saúl Ibarra Corretgé",
@@ -30,7 +21,11 @@ setup(name             = "aiodns",
       url              = "http://github.com/saghul/aiodns",
       description      = "Simple DNS resolver for asyncio",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),
-      install_requires = install_requires,
+      install_requires = ['pycares>=1.0.0'],
+      extras_require   = {
+          ':python_version=="3.3"': ['asyncio'],
+          ':python_version<="3.2"': ['trollius'],
+      },
       packages         = ['aiodns'],
       platforms        = ["POSIX", "Microsoft Windows"],
       classifiers      = [
