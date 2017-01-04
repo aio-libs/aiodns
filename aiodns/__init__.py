@@ -6,7 +6,14 @@ except ImportError:
     import trollius as asyncio
 import pycares
 
-from . import error
+from typing import (
+    Any,
+    List,
+    Optional,
+)
+
+# TODO: Work out mypy no attribute error and remove ignore
+from . import error # type: ignore
 
 
 __version__ = '1.1.1'
@@ -33,26 +40,30 @@ query_type_map = {'A'     : pycares.QUERY_TYPE_A,
 class DNSResolver(object):
 
     def __init__(self, nameservers=None, loop=None, **kwargs):
+        # type: (Optional[List[str]], Optional[asyncio.AbstractEventLoop], Any) -> None
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
         self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb, **kwargs)
         if nameservers:
             self.nameservers = nameservers
-        self._read_fds = set()
-        self._write_fds = set()
+        self._read_fds = set() # type: Set[int]
+        self._write_fds = set() # type: Set[int]
         self._timer = None
 
     @property
     def nameservers(self):
+        # type: () -> pycares.Channel
         return self._channel.servers
 
     @nameservers.setter
     def nameservers(self, value):
+        # type: (List[str]) -> None
         self._channel.servers = value
 
     @staticmethod
     def _callback(fut, result, errorno):
+        # type: (asyncio.Future, Any, int) -> None
         if fut.cancelled():
             return
         if errorno is not None:
@@ -61,6 +72,7 @@ class DNSResolver(object):
             fut.set_result(result)
 
     def query(self, host, qtype):
+        # type: (str, str) -> asyncio.Future
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -71,15 +83,18 @@ class DNSResolver(object):
         return fut
 
     def gethostbyname(self, host, family):
+        # type: (str, str) -> asyncio.Future
         fut = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
         return fut
 
     def cancel(self):
+        # type: () -> None
         self._channel.cancel()
 
     def _sock_state_cb(self, fd, readable, writable):
+        # type: (int, bool, bool) -> None
         if readable or writable:
             if readable:
                 self.loop.add_reader(fd, self._handle_event, fd, READ)
@@ -104,6 +119,7 @@ class DNSResolver(object):
                 self._timer = None
 
     def _handle_event(self, fd, event):
+        # type: (int, Any) -> None
         read_fd = pycares.ARES_SOCKET_BAD
         write_fd = pycares.ARES_SOCKET_BAD
         if event == READ:
@@ -113,6 +129,7 @@ class DNSResolver(object):
         self._channel.process_fd(read_fd, write_fd)
 
     def _timer_cb(self):
+        # type: () -> None
         if self._read_fds or self._write_fds:
             self._channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
             self._timer = self.loop.call_later(1.0, self._timer_cb)
@@ -120,5 +137,5 @@ class DNSResolver(object):
             self._timer = None
 
     def __del__(self):
+        # type: () -> None
         self._channel.destroy()
-

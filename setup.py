@@ -21,7 +21,7 @@ setup(name             = "aiodns",
       url              = "http://github.com/saghul/aiodns",
       description      = "Simple DNS resolver for asyncio",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),
-      install_requires = ['pycares>=1.0.0'],
+      install_requires = ['pycares>=1.0.0', 'typing'],
       extras_require   = {
           ':python_version=="3.3"': ['asyncio'],
           ':python_version<="3.2"': ['trollius'],
@@ -47,4 +47,3 @@ setup(name             = "aiodns",
           "Programming Language :: Python :: 3.5"
       ]
 )
-
