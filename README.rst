@@ -28,7 +28,23 @@ The following query types are supported: A, AAAA, CNAME, MX, NAPTR, NS, PTR, SOA
 
 The library supports both *asyncio* and *Trollius*.
 
-If you use Python 3 you may use `yield from` statement::
+If you use use Python 3.5+, you can use the `async` and `await` statements::
+
+    import asyncio
+    import aiodns
+
+    loop = asyncio.get_event_loop()
+    resolver = aiodns.DNSResolver(loop=loop)
+
+    async def query(name, query_type):
+        return await resolver.query(name, query_type)
+
+    coro = query('google.com', 'A')
+    result = loop.run_until_complete(coro)
+
+
+
+If you use Python 3.3/3.4 you may use `yield from` statement::
 
     @asyncio.coroutine
     def func():
