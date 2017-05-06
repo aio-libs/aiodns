@@ -40,7 +40,7 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_cname(self):
-        f = self.resolver.query('livechat.ripe.net', 'CNAME')
+        f = self.resolver.query('www.amazon.com', 'CNAME')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
