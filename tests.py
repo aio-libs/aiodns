@@ -148,6 +148,20 @@ class DNSTest(unittest.TestCase):
         with self.assertRaises(aiodns.error.DNSError):
             self.loop.run_until_complete(f)
 
+    def test_gethostbyaddr(self):
+        f = self.resolver.gethostbyaddr("8.8.8.8")
+        result = self.loop.run_until_complete(f)
+        self.assertIn("google", result.name)
+
+    def test_gethostbyaddr_ipv6(self):
+        f = self.resolver.gethostbyaddr("2001:4860:4860::8888")
+        result = self.loop.run_until_complete(f)
+        self.assertIn("google", result.name)
+
+    def test_gethostbyaddr_bad_address(self):
+        with self.assertRaisesRegex(ValueError, "invalid IP address"):
+            self.resolver.gethostbyaddr("0.0.0.0.0")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

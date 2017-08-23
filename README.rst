@@ -59,7 +59,7 @@ For Trollius you should use another syntax like::
 API
 ===
 
-The API is pretty simple, three functions are provided in the ``DNSResolver`` class:
+The API is pretty simple, four functions are provided in the ``DNSResolver`` class:
 
 * ``query(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
   instance of ``asyncio.Future``. The actual result of the DNS query is taken directly from pycares.
@@ -72,6 +72,10 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
   ``gethostbyname()`` first looks into ``/etc/hosts`` and thus can resolve
   local hostnames (such as ``localhost``).  Please check `the documentation
   <http://pycares.readthedocs.io/en/latest/channel.html#pycares.Channel.gethostbyname>`_
+  for the result fields. The actual result of the call is a ``asyncio.Future``.
+* ``gethostbyaddr()``: Retrieves the host information corresponding to a network address.
+  Please check `the documentation
+  <http://pycares.readthedocs.io/en/latest/channel.html#pycares.Channel.gethostbyaddr>`_
   for the result fields. The actual result of the call is a ``asyncio.Future``.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
   ``ARES_ECANCELLED`` errno.
