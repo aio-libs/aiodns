@@ -159,8 +159,9 @@ class DNSTest(unittest.TestCase):
         self.assertIn("google", result.name)
 
     def test_gethostbyaddr_bad_address(self):
-        with self.assertRaisesRegex(ValueError, "invalid IP address"):
+        with self.assertRaises(ValueError) as raised:
             self.resolver.gethostbyaddr("0.0.0.0.0")
+        self.assertEqual(str(raised.exception), "invalid IP address")
 
 
 if __name__ == '__main__':
