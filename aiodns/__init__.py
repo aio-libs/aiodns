@@ -82,6 +82,13 @@ class DNSResolver(object):
         self._channel.query(host, qtype, cb)
         return fut
 
+    def gethostbyaddr(self, addr):
+        # type: (str) -> asyncio.Future
+        fut = asyncio.Future(loop=self.loop)
+        cb = functools.partial(self._callback, fut)
+        self._channel.gethostbyaddr(addr, cb)
+        return fut
+
     def gethostbyname(self, host, family):
         # type: (str, str) -> asyncio.Future
         fut = asyncio.Future(loop=self.loop)
