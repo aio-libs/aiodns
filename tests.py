@@ -113,7 +113,7 @@ class DNSTest(unittest.TestCase):
 #            self.assertTrue(e)
 
     def test_query_twice(self):
-        if sys.version[:3] >= '3.3':
+        if sys.version_info >= (3, 3):
             exec('''if 1:
             @asyncio.coroutine
             def coro(self, host, qtype, n=2):
