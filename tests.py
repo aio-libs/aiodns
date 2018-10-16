@@ -138,6 +138,11 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
+    def test_gethostbyaddr(self):
+        f = self.resolver.gethostbyaddr("127.0.0.1")
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+
     def test_gethostbyname_ipv6(self):
         f = self.resolver.gethostbyname("ipv6.google.com", socket.AF_INET6)
         result = self.loop.run_until_complete(f)
