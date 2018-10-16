@@ -73,6 +73,7 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
   local hostnames (such as ``localhost``).  Please check `the documentation
   <http://pycares.readthedocs.io/en/latest/channel.html#pycares.Channel.gethostbyname>`_
   for the result fields. The actual result of the call is a ``asyncio.Future``.
+* ``gethostbyaddr(name)``: Make a reverse lookup for an address.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
   ``ARES_ECANCELLED`` errno.
 
