@@ -16,7 +16,7 @@ from typing import (
 from . import error # type: ignore
 
 
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 __all__ = ('DNSResolver', 'error')
 

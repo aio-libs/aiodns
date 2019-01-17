@@ -1,3 +1,11 @@
+1.2.0
+=====
+- Add support for Python 3.7
+- Fix CNAME test
+- Add examples with `async` and `await`
+- Fix Python version check
+- Add gethostbyaddr
+
 1.1.1
 =====
 - Use per-version requires for wheels
