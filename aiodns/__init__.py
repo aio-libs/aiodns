@@ -1,9 +1,6 @@
-import functools
 
-try:
-    import asyncio
-except ImportError:
-    import trollius as asyncio
+import asyncio
+import functools
 import pycares
 
 from typing import (
@@ -37,8 +34,7 @@ query_type_map = {'A'     : pycares.QUERY_TYPE_A,
         }
 
 
-class DNSResolver(object):
-
+class DNSResolver:
     def __init__(self, nameservers=None, loop=None, **kwargs):
         # type: (Optional[List[str]], Optional[asyncio.AbstractEventLoop], Any) -> None
         self.loop = loop or asyncio.get_event_loop()
@@ -146,3 +142,4 @@ class DNSResolver(object):
     def __del__(self):
         # type: () -> None
         self._channel.destroy()
+

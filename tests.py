@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 
-try:
-    import asyncio
-except ImportError:
-    import trollius as asyncio
+import asyncio
+import ipaddress
 import unittest
 import socket
 import sys
 
 import aiodns
-import pycares
 
 
 class DNSTest(unittest.TestCase):
-
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
@@ -25,6 +21,11 @@ class DNSTest(unittest.TestCase):
     def test_query_a(self):
         f = self.resolver.query('google.com', 'A')
         result = self.loop.run_until_complete(f)
+
+    def test_query_async_await(self):
+        async def f():
+            return await self.resolver.query('google.com', 'A')
+        result = self.loop.run_until_complete(f())
         self.assertTrue(result)
 
     def test_query_a_bad(self):
@@ -76,7 +77,7 @@ class DNSTest(unittest.TestCase):
 
     def test_query_ptr(self):
         ip = '8.8.8.8'
-        f = self.resolver.query(pycares.reverse_address(ip), 'PTR')
+        f = self.resolver.query(ipaddress.ip_address(ip).reverse_pointer, 'PTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
@@ -100,56 +101,41 @@ class DNSTest(unittest.TestCase):
         except aiodns.error.DNSError as e:
             self.assertEqual(e.args[0], aiodns.error.ARES_ECANCELLED)
 
-#    def test_future_cancel(self):
-#        # TODO: write this in such a way it also works with trollius
-#        f = self.resolver.query('google.com', 'A')
-#        f.cancel()
-#        def coro():
-#            yield from asyncio.sleep(0.1, loop=self.loop)
-#            yield from f
-#        try:
-#            self.loop.run_until_complete(coro())
-#        except asyncio.CancelledError as e:
-#            self.assertTrue(e)
+    def test_future_cancel(self):
+        f = self.resolver.query('google.com', 'A')
+        f.cancel()
+        async def coro():
+            await asyncio.sleep(0.1, loop=self.loop)
+            await f
+        try:
+            self.loop.run_until_complete(coro())
+        except asyncio.CancelledError as e:
+            self.assertTrue(e)
 
     def test_query_twice(self):
-        if sys.version_info >= (3, 3):
-            exec('''if 1:
-            @asyncio.coroutine
-            def coro(self, host, qtype, n=2):
-                for i in range(n):
-                    result = yield from self.resolver.query(host, qtype)
-                    self.assertTrue(result)
-            ''')
-
-        else:
-            exec('''if 1:
-            @asyncio.coroutine
-            def coro(self, host, qtype, n=2):
-                for i in range(n):
-                    result = yield asyncio.From(self.resolver.query(host, qtype))
-                    self.assertTrue(result)
-            ''')
-
-        self.loop.run_until_complete(locals()['coro'](self, 'gmail.com', 'MX'))
+        async def coro(self, host, qtype, n=2):
+            for i in range(n):
+                result = await self.resolver.query(host, qtype)
+                self.assertTrue(result)
+        self.loop.run_until_complete(coro(self, 'gmail.com', 'MX'))
 
     def test_gethostbyname(self):
-        f = self.resolver.gethostbyname("google.com", socket.AF_INET)
+        f = self.resolver.gethostbyname('google.com', socket.AF_INET)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
     def test_gethostbyaddr(self):
-        f = self.resolver.gethostbyaddr("127.0.0.1")
+        f = self.resolver.gethostbyaddr('127.0.0.1')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
     def test_gethostbyname_ipv6(self):
-        f = self.resolver.gethostbyname("ipv6.google.com", socket.AF_INET6)
+        f = self.resolver.gethostbyname('ipv6.google.com', socket.AF_INET6)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
     def test_gethostbyname_bad_family(self):
-        f = self.resolver.gethostbyname("ipv6.google.com", -1)
+        f = self.resolver.gethostbyname('ipv6.google.com', -1)
         with self.assertRaises(aiodns.error.DNSError):
             self.loop.run_until_complete(f)
 

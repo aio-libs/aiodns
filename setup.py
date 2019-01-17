@@ -4,10 +4,7 @@ import codecs
 import re
 import sys
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 
 def get_version():
@@ -22,10 +19,6 @@ setup(name             = "aiodns",
       description      = "Simple DNS resolver for asyncio",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),
       install_requires = ['pycares>=1.0.0', 'typing'],
-      extras_require   = {
-          ':python_version=="3.3"': ['asyncio'],
-          ':python_version<="3.2"': ['trollius'],
-      },
       packages         = ['aiodns'],
       platforms        = ["POSIX", "Microsoft Windows"],
       classifiers      = [
@@ -35,15 +28,7 @@ setup(name             = "aiodns",
           "Operating System :: POSIX",
           "Operating System :: Microsoft :: Windows",
           "Programming Language :: Python",
-          "Programming Language :: Python :: 2",
-          "Programming Language :: Python :: 2.6",
-          "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.0",
-          "Programming Language :: Python :: 3.1",
-          "Programming Language :: Python :: 3.2",
-          "Programming Language :: Python :: 3.3",
-          "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7"
