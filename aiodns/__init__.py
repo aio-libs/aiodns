@@ -23,6 +23,7 @@ WRITE = 2
 
 query_type_map = {'A'     : pycares.QUERY_TYPE_A,
                   'AAAA'  : pycares.QUERY_TYPE_AAAA,
+                  'ANY'   : pycares.QUERY_TYPE_ANY,
                   'CNAME' : pycares.QUERY_TYPE_CNAME,
                   'MX'    : pycares.QUERY_TYPE_MX,
                   'NAPTR' : pycares.QUERY_TYPE_NAPTR,
