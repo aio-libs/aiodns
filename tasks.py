@@ -15,5 +15,6 @@ def release(c):
     c.run("git push --tags")
 
     c.run("python setup.py sdist")
+    c.run("python setup.py bdist_wheel")
     c.run("twine upload -r pypi dist/aiodns-{0}*".format(version))
 
