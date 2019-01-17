@@ -1,14 +1,19 @@
 
-import invoke
+import re
+from invoke import task
 
-# Based on https://github.com/pyca/cryptography/blob/master/tasks.py
+
+def get_version():
+    return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('aiodns/__init__.py').read()).group('version')
 
 
-@invoke.task
-def release(version):
-    invoke.run("git tag -a aiodns-{0} -m \"aiodns {0} release\"".format(version))
-    invoke.run("git push --tags")
+@task
+def release(c):
+    version = get_version()
 
-    invoke.run("python setup.py sdist")
-    invoke.run("twine upload -r pypi dist/aiodns-{0}*".format(version))
+    c.run("git tag -a aiodns-{0} -m \"aiodns {0} release\"".format(version))
+    c.run("git push --tags")
+
+    c.run("python setup.py sdist")
+    c.run("twine upload -r pypi dist/aiodns-{0}*".format(version))
 
