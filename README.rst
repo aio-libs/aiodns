@@ -5,30 +5,13 @@ Simple DNS resolver for asyncio
 .. image:: https://secure.travis-ci.org/saghul/aiodns.png?branch=master
     :target: http://travis-ci.org/saghul/aiodns
 
-aiodns provides a simple way for doing asynchronous DNS resolutions
-with a synchronous looking interface by using `pycares <https://github.com/saghul/pycares>`_.
+aiodns provides a simple way for doing asynchronous DNS resolutions using `pycares <https://github.com/saghul/pycares>`_.
 
 
 Example
 =======
 
 ::
-
-    import asyncio
-    import aiodns
-
-    loop = asyncio.get_event_loop()
-    resolver = aiodns.DNSResolver(loop=loop)
-    f = resolver.query('google.com','A')
-    result = loop.run_until_complete(f)
-    print(result)
-
-
-The following query types are supported: A, AAAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
-
-The library supports both *asyncio* and *Trollius*.
-
-If you use use Python 3.5+, you can use the `async` and `await` statements::
 
     import asyncio
     import aiodns
@@ -43,18 +26,8 @@ If you use use Python 3.5+, you can use the `async` and `await` statements::
     result = loop.run_until_complete(coro)
 
 
+The following query types are supported: A, AAAA, ANY, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
 
-If you use Python 3.3/3.4 you may use `yield from` statement::
-
-    @asyncio.coroutine
-    def func():
-        result = yield from resolver.query('google.com','A')
-
-For Trollius you should use another syntax like::
-
-    @trollius.coroutine
-    def func():
-         result = yield trollius.From(resolver.query('google.com','A'))
 
 API
 ===
@@ -81,7 +54,7 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
 Running the test suite
 ======================
 
-To run the test suite: ``python test_aiodns.py``
+To run the test suite: ``python tests.py``
 
 
 Author
@@ -99,8 +72,7 @@ aiodns uses the MIT license, check LICENSE file.
 Python versions
 ===============
 
-Python >= 3.4 is natively supported. Python 3.3 supported using the `asyncio package <https://pypi.python.org/pypi/asyncio>`_.
-Older Python versions(2.6 - 3.2) are supported using `trollius <https://pypi.python.org/pypi/trollius>`_.
+Python >= 3.5 are supported.
 
 
 Contributing
