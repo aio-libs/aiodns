@@ -18,7 +18,7 @@ setup(name             = "aiodns",
       url              = "http://github.com/saghul/aiodns",
       description      = "Simple DNS resolver for asyncio",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),
-      install_requires = ['pycares>=1.0.0', 'typing'],
+      install_requires = ['pycares>=3.0.0b2', 'typing'],
       packages         = ['aiodns'],
       platforms        = ["POSIX", "Microsoft Windows"],
       classifiers      = [
