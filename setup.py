@@ -17,7 +17,7 @@ def get_version():
 setup(name             = "aiodns",
       version          = get_version(),
       author           = "Saúl Ibarra Corretgé",
-      author_email     = "saghul@gmail.com",
+      author_email     = "s@saghul.net",
       url              = "http://github.com/saghul/aiodns",
       description      = "Simple DNS resolver for asyncio",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),

@@ -87,7 +87,7 @@ To run the test suite: ``python test_aiodns.py``
 Author
 ======
 
-Saúl Ibarra Corretgé <saghul@gmail.com>
+Saúl Ibarra Corretgé <s@saghul.net>
 
 
 License
