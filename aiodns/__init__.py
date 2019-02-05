@@ -140,7 +140,3 @@ class DNSResolver:
         else:
             self._timer = None
 
-    def __del__(self):
-        # type: () -> None
-        self._channel.destroy()
-
