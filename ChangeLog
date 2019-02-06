@@ -1,3 +1,11 @@
+2.0.0b2
+=======
+- Raise pycares dependency
+
+2.0.0b1
+=======
+- Fix using typing on Python 3.7
+
 2.0.0b0
 =======
 - Drop support for Python < 3.5
