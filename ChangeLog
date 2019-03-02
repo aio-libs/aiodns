@@ -1,3 +1,11 @@
+2.0.0
+=====
+(changes since version 1.x)
+
+- Drop support for Python < 3.5
+- Add support for ANY queries
+- Raise pycares dependency
+
 2.0.0b2
 =======
 - Raise pycares dependency
