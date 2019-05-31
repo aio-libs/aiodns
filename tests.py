@@ -5,6 +5,7 @@ import ipaddress
 import unittest
 import socket
 import sys
+import time
 
 import aiodns
 
@@ -88,10 +89,13 @@ class DNSTest(unittest.TestCase):
         self.resolver = aiodns.DNSResolver(timeout=0.1, loop=self.loop)
         self.resolver.nameservers = ['1.2.3.4']
         f = self.resolver.query('google.com', 'A')
+        started = time.monotonic()
         try:
             self.loop.run_until_complete(f)
         except aiodns.error.DNSError as e:
             self.assertEqual(e.args[0], aiodns.error.ARES_ETIMEOUT)
+        # Ensure timeout really cuts time deadline. Limit duration to one second
+        self.assertLess(time.monotonic() - started, 1)
 
     def test_query_cancel(self):
         f = self.resolver.query('google.com', 'A')
