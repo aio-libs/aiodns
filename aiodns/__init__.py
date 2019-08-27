@@ -2,6 +2,7 @@
 import asyncio
 import functools
 import pycares
+import socket
 
 from typing import (
     Any,
@@ -80,7 +81,7 @@ class DNSResolver:
         return fut
 
     def gethostbyname(self, host, family):
-        # type: (str, str) -> asyncio.Future
+        # type: (str, socket.AddressFamily) -> asyncio.Future
         fut = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
