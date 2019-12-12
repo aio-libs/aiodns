@@ -14,7 +14,7 @@ branches:
     - master
 
 before_install:
-  - pip install -U setuptools pip mypy wheel
+  - pip install -U setuptools pip wheel
 
 install:
   - python -V
