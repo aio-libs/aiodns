@@ -37,8 +37,8 @@ query_type_map = {'A'     : pycares.QUERY_TYPE_A,
 
 
 class DNSResolver:
-    def __init__(self, nameservers=None, loop=None, **kwargs):
-        # type: (Optional[List[str]], Optional[asyncio.AbstractEventLoop], Any) -> None
+    def __init__(self, nameservers: Optional[List[str]] = None, loop: Optional[asyncio.AbstractEventLoop] = None,
+                 **kwargs: Any) -> None:
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
@@ -50,18 +50,15 @@ class DNSResolver:
         self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     @property
-    def nameservers(self):
-        # type: () -> pycares.Channel
+    def nameservers(self) -> pycares.Channel:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value):
-        # type: (List[str]) -> None
+    def nameservers(self, value: List[str]) -> None:
         self._channel.servers = value
 
     @staticmethod
-    def _callback(fut, result, errorno):
-        # type: (asyncio.Future, Any, int) -> None
+    def _callback(fut: asyncio.Future, result: Any, errorno: int) -> None:
         if fut.cancelled():
             return
         if errorno is not None:
@@ -69,8 +66,7 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host, qtype):
-        # type: (str, str) -> asyncio.Future
+    def query(self, host: str, qtype: str) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -80,26 +76,22 @@ class DNSResolver:
         self._channel.query(host, qtype, cb)
         return fut
 
-    def gethostbyname(self, host, family):
-        # type: (str, socket.AddressFamily) -> asyncio.Future
+    def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
         return fut
 
-    def gethostbyaddr(self, name):
-        # type: (str) -> asyncio.Future
+    def gethostbyaddr(self, name: str) -> asyncio.Future:
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyaddr(name, cb)
         return fut
 
-    def cancel(self):
-        # type: () -> None
+    def cancel(self) -> None:
         self._channel.cancel()
 
-    def _sock_state_cb(self, fd, readable, writable):
-        # type: (int, bool, bool) -> None
+    def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
         if readable or writable:
             if readable:
                 self.loop.add_reader(fd, self._handle_event, fd, READ)
@@ -123,8 +115,7 @@ class DNSResolver:
                 self._timer.cancel()
                 self._timer = None
 
-    def _handle_event(self, fd, event):
-        # type: (int, Any) -> None
+    def _handle_event(self, fd: int, event: Any) -> None:
         read_fd = pycares.ARES_SOCKET_BAD
         write_fd = pycares.ARES_SOCKET_BAD
         if event == READ:
@@ -133,8 +124,7 @@ class DNSResolver:
             write_fd = fd
         self._channel.process_fd(read_fd, write_fd)
 
-    def _timer_cb(self):
-        # type: () -> None
+    def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
             self._channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
             self._timer = self.loop.call_later(1.0, self._timer_cb)
