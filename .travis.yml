@@ -22,4 +22,5 @@ install:
 
 script:
   - ./tests.py
+  - python mypy_run.py
 
