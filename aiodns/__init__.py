@@ -8,10 +8,10 @@ from typing import (
     Any,
     List,
     Optional,
+    Set
 )
 
-# TODO: Work out mypy no attribute error and remove ignore
-from . import error # type: ignore
+from . import error
 
 
 __version__ = '2.0.0'
@@ -47,7 +47,7 @@ class DNSResolver:
             self.nameservers = nameservers
         self._read_fds = set() # type: Set[int]
         self._write_fds = set() # type: Set[int]
-        self._timer = None
+        self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     @property
     def nameservers(self):
@@ -75,21 +75,21 @@ class DNSResolver:
             qtype = query_type_map[qtype]
         except KeyError:
             raise ValueError('invalid query type: {}'.format(qtype))
-        fut = asyncio.Future(loop=self.loop)
+        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb)
         return fut
 
     def gethostbyname(self, host, family):
         # type: (str, socket.AddressFamily) -> asyncio.Future
-        fut = asyncio.Future(loop=self.loop)
+        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
         return fut
 
     def gethostbyaddr(self, name):
         # type: (str) -> asyncio.Future
-        fut = asyncio.Future(loop=self.loop)
+        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyaddr(name, cb)
         return fut
