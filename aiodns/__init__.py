@@ -66,14 +66,14 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str) -> asyncio.Future:
+    def query(self, host: str, qtype: str, dnsclass: str=None) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
             raise ValueError('invalid query type: {}'.format(qtype))
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
-        self._channel.query(host, qtype, cb)
+        self._channel.query(host, qtype, cb, dnsclass=dnsclass)
         return fut
 
     def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
