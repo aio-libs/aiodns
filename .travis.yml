@@ -22,6 +22,10 @@ matrix:
 branches:
   only:
     - master
+addons:
+  apt:
+    packages:
+      - pycares
 
 before_install:
   - pip install -U setuptools pip wheel
