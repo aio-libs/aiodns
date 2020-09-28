@@ -22,12 +22,9 @@ matrix:
 branches:
   only:
     - master
-addons:
-  apt:
-    packages:
-      - pycares
 
 before_install:
+  - sudo apt-get install pycares
   - pip install -U setuptools pip wheel
 
 install:
