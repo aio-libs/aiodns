@@ -27,10 +27,14 @@ before_install:
   - pip install -U setuptools pip wheel
 
 install:
+  - |
+      if [[ "Travis_CPU_ARCH" == "ppc64le"]]; then
+      sudo chown -R $USER:$GROUP ~/.cache/pip/wheels
+      fi
   - python -V
   - pip install .
 
 script:
   - ./tests.py
   - python mypy_run.py
-
+  
