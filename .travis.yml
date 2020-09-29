@@ -25,12 +25,9 @@ branches:
 
 before_install:
   - pip install -U setuptools pip wheel
+  - sudo chown -R $USER:$GROUP ~/.cache/pip/wheels
 
 install:
-  - |
-      if [[ "TRAVIS_CPU_ARCH" == "ppc64le" ]]; then
-      sudo chown -R $USER:$GROUP ~/.cache/pip/wheels
-      fi
   - python -V
   - pip install .
 
