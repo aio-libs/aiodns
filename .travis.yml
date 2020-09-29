@@ -17,15 +17,16 @@ matrix:
       dist: xenial
       sudo: true
       arch: ppc64le
-    - python: pypy3
-      arch: ppc64le
 branches:
   only:
     - master
 
 before_install:
   - pip install -U setuptools pip wheel
-  - sudo chown -R $USER:$GROUP ~/.cache/pip/wheels
+  - | 
+   if [[ "$TRAVIS_CPU_ARCH" == "ppc64le" ]]; then
+     sudo chown -Rv $USER:$GROUP ~/.cache/pip/wheels
+   fi
 
 install:
   - python -V
