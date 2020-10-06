@@ -17,6 +17,11 @@ matrix:
       dist: xenial
       sudo: true
       arch: ppc64le
+# Disable version pypy3
+jobs: 
+  exclude:
+    - arch: ppc64le
+      python: pypy3
 branches:
   only:
     - master
