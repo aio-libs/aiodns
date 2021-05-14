@@ -85,8 +85,8 @@ class DNSTest(unittest.TestCase):
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')
 
     def test_query_txt_chaos(self):
-        # TODO: this will fail if your resolver does not support the query
-        # TODO: create a separate resolver object for testing?
+        self.resolver = aiodns.DNSResolver(loop=self.loop)
+        self.resolver.nameservers = ['1.1.1.1']
         f = self.resolver.query('id.server', 'TXT', 'CHAOS')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
@@ -157,4 +157,3 @@ class DNSTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-
