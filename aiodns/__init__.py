@@ -25,6 +25,7 @@ WRITE = 2
 query_type_map = {'A'     : pycares.QUERY_TYPE_A,
                   'AAAA'  : pycares.QUERY_TYPE_AAAA,
                   'ANY'   : pycares.QUERY_TYPE_ANY,
+                  'CAA'   : pycares.QUERY_TYPE_CAA,
                   'CNAME' : pycares.QUERY_TYPE_CNAME,
                   'MX'    : pycares.QUERY_TYPE_MX,
                   'NAPTR' : pycares.QUERY_TYPE_NAPTR,
@@ -43,7 +44,8 @@ query_class_map = {'IN'    : pycares.QUERY_CLASS_IN,
                    }
 
 class DNSResolver:
-    def __init__(self, nameservers: Optional[List[str]] = None, loop: Optional[asyncio.AbstractEventLoop] = None,
+    def __init__(self, nameservers: Optional[List[str]] = None,
+                 loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
@@ -142,4 +144,3 @@ class DNSResolver:
             self._timer = self.loop.call_later(1.0, self._timer_cb)
         else:
             self._timer = None
-

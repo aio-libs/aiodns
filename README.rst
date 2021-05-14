@@ -26,7 +26,7 @@ Example
     result = loop.run_until_complete(coro)
 
 
-The following query types are supported: A, AAAA, ANY, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
+The following query types are supported: A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
 
 
 API
