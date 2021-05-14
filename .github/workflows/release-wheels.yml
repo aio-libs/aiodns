@@ -1,0 +1,55 @@
+name: Release Wheels
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build_wheels:
+    name: Build wheels
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.8'
+      - run: pip install wheel
+      - name: Build wheels
+        run: python setup.py bdist_wheel
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.8'
+      - name: Build sdist
+        run: python setup.py sdist
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-20.04
+    # upload to PyPI when a GitHub Release is created
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
