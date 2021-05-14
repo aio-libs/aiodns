@@ -2,8 +2,11 @@
 Simple DNS resolver for asyncio
 ===============================
 
-.. image:: https://secure.travis-ci.org/saghul/aiodns.svg?branch=master
-    :target: http://travis-ci.org/saghul/aiodns
+.. image:: https://badge.fury.io/py/aiodns.png
+    :target: https://pypi.org/project/aiodns/
+
+.. image:: https://github.com/saghul/aiodns/workflows/CI/badge.svg
+    :target: https://github.com/saghul/aiodns/actions
 
 aiodns provides a simple way for doing asynchronous DNS resolutions using `pycares <https://github.com/saghul/pycares>`_.
 
