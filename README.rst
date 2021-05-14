@@ -73,7 +73,7 @@ aiodns uses the MIT license, check LICENSE file.
 Python versions
 ===============
 
-Python >= 3.5 are supported.
+Python >= 3.6 are supported.
 
 
 Contributing
@@ -82,4 +82,3 @@ Contributing
 If you'd like to contribute, fork the project, make a patch and send a pull
 request. Have a look at the surrounding code and please, make yours look
 alike :-)
-
