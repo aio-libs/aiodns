@@ -20,7 +20,7 @@ setup(name             = "aiodns",
       license          = "MIT",
       long_description = codecs.open("README.rst", encoding="utf-8").read(),
       long_description_content_type = "text/x-rst",
-      install_requires = ['pycares>=4.0.0', 'typing; python_version<"3.5"'],
+      install_requires = ['pycares>=4.0.0'],
       packages         = ['aiodns'],
       platforms        = ["POSIX", "Microsoft Windows"],
       classifiers      = [
@@ -31,8 +31,9 @@ setup(name             = "aiodns",
           "Operating System :: Microsoft :: Windows",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
-          "Programming Language :: Python :: 3.7"
+          "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
+          "Programming Language :: Python :: 3.9"
       ]
 )
