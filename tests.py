@@ -84,6 +84,16 @@ class DNSTest(unittest.TestCase):
     def test_query_bad_type(self):
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')
 
+    def test_query_txt_chaos(self):
+        # TODO: this will fail if your resolver does not support the query
+        # TODO: create a separate resolver object for testing?
+        f = self.resolver.query('id.server', 'TXT', 'CHAOS')
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+
+    def test_query_bad_class(self):
+        self.assertRaises(ValueError, self.resolver.query, 'google.com', 'A', "INVALIDCLASS")
+
     def test_query_timeout(self):
         self.resolver = aiodns.DNSResolver(timeout=0.1, loop=self.loop)
         self.resolver.nameservers = ['1.2.3.4']

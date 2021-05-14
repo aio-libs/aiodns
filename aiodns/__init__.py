@@ -35,6 +35,12 @@ query_type_map = {'A'     : pycares.QUERY_TYPE_A,
                   'TXT'   : pycares.QUERY_TYPE_TXT
         }
 
+query_class_map = {'IN'    : pycares.QUERY_CLASS_IN,
+                   'CHAOS' : pycares.QUERY_CLASS_CHAOS,
+                   'HS'    : pycares.QUERY_CLASS_HS,
+                   'NONE'  : pycares.QUERY_CLASS_NONE,
+                   'ANY'   : pycares.QUERY_CLASS_ANY
+                   }
 
 class DNSResolver:
     def __init__(self, nameservers: Optional[List[str]] = None, loop: Optional[asyncio.AbstractEventLoop] = None,
@@ -66,14 +72,20 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str) -> asyncio.Future:
+    def query(self, host: str, qtype: str, qclass: str=None) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
             raise ValueError('invalid query type: {}'.format(qtype))
+        if qclass is not None:
+            try:
+                qclass = query_class_map[qclass]
+            except KeyError:
+                raise ValueError('invalid query class: {}'.format(qclass))
+
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
-        self._channel.query(host, qtype, cb)
+        self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
     def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
