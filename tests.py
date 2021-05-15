@@ -116,7 +116,7 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.query('google.com', 'A')
         f.cancel()
         async def coro():
-            await asyncio.sleep(0.1, loop=self.loop)
+            await asyncio.sleep(0.1)
             await f
         try:
             self.loop.run_until_complete(coro())
