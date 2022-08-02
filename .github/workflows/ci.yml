@@ -10,16 +10,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-10.15]
-        python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10-dev', 'pypy-3.6', 'pypy-3.7' ]
+        python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10', '3.11-dev', 'pypy-3.8', 'pypy-3.9' ]
         exclude:
           - os: windows-2019
-            python-version: 3.10-dev
+            python-version: 3.11-dev
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install wheel
