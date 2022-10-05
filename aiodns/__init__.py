@@ -8,7 +8,8 @@ from typing import (
     Any,
     List,
     Optional,
-    Set
+    Set,
+    Union
 )
 
 from . import error
@@ -58,7 +59,7 @@ class DNSResolver:
         self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     @property
-    def nameservers(self) -> pycares.Channel:
+    def nameservers(self) -> List[Union[str, bytes]]:
         return self._channel.servers
 
     @nameservers.setter
