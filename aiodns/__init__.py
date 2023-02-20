@@ -3,6 +3,7 @@ import asyncio
 import functools
 import pycares
 import socket
+import sys
 
 from typing import (
     Any,
@@ -47,6 +48,10 @@ class DNSResolver:
     def __init__(self, nameservers: Optional[List[str]] = None,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
+        if(sys.platform == 'win32'):
+            if(type(loop) != asyncio.SelectorEventLoop):
+                raise RuntimeError(
+                    'aiodns need a SelectorEventLoop on Windows\nSee more: https://github.com/saghul/aiodns/issues/86')
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
         kwargs.pop('sock_state_cb', None)

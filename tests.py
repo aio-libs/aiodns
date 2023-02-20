@@ -2,6 +2,7 @@
 
 import asyncio
 import ipaddress
+import selectors
 import unittest
 import socket
 import sys
@@ -11,7 +12,11 @@ import aiodns
 
 class DNSTest(unittest.TestCase):
     def setUp(self):
-        self.loop = asyncio.new_event_loop()
+        if(sys.platform == 'win32'):
+            self.loop = asyncio.SelectorEventLoop(
+                selectors.SelectSelector())
+        else:
+            self.loop = asyncio.get_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
         self.resolver.nameservers = ['8.8.8.8']
