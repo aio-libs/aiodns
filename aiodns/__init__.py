@@ -3,6 +3,7 @@ import asyncio
 import functools
 import pycares
 import socket
+import sys
 
 from typing import (
     Any,
@@ -22,39 +23,45 @@ __all__ = ('DNSResolver', 'error')
 READ = 1
 WRITE = 2
 
-query_type_map = {'A'     : pycares.QUERY_TYPE_A,
-                  'AAAA'  : pycares.QUERY_TYPE_AAAA,
-                  'ANY'   : pycares.QUERY_TYPE_ANY,
-                  'CAA'   : pycares.QUERY_TYPE_CAA,
-                  'CNAME' : pycares.QUERY_TYPE_CNAME,
-                  'MX'    : pycares.QUERY_TYPE_MX,
-                  'NAPTR' : pycares.QUERY_TYPE_NAPTR,
-                  'NS'    : pycares.QUERY_TYPE_NS,
-                  'PTR'   : pycares.QUERY_TYPE_PTR,
-                  'SOA'   : pycares.QUERY_TYPE_SOA,
-                  'SRV'   : pycares.QUERY_TYPE_SRV,
-                  'TXT'   : pycares.QUERY_TYPE_TXT
-        }
+query_type_map = {'A': pycares.QUERY_TYPE_A,
+                  'AAAA': pycares.QUERY_TYPE_AAAA,
+                  'ANY': pycares.QUERY_TYPE_ANY,
+                  'CAA': pycares.QUERY_TYPE_CAA,
+                  'CNAME': pycares.QUERY_TYPE_CNAME,
+                  'MX': pycares.QUERY_TYPE_MX,
+                  'NAPTR': pycares.QUERY_TYPE_NAPTR,
+                  'NS': pycares.QUERY_TYPE_NS,
+                  'PTR': pycares.QUERY_TYPE_PTR,
+                  'SOA': pycares.QUERY_TYPE_SOA,
+                  'SRV': pycares.QUERY_TYPE_SRV,
+                  'TXT': pycares.QUERY_TYPE_TXT
+                  }
 
-query_class_map = {'IN'    : pycares.QUERY_CLASS_IN,
-                   'CHAOS' : pycares.QUERY_CLASS_CHAOS,
-                   'HS'    : pycares.QUERY_CLASS_HS,
-                   'NONE'  : pycares.QUERY_CLASS_NONE,
-                   'ANY'   : pycares.QUERY_CLASS_ANY
+query_class_map = {'IN': pycares.QUERY_CLASS_IN,
+                   'CHAOS': pycares.QUERY_CLASS_CHAOS,
+                   'HS': pycares.QUERY_CLASS_HS,
+                   'NONE': pycares.QUERY_CLASS_NONE,
+                   'ANY': pycares.QUERY_CLASS_ANY
                    }
+
 
 class DNSResolver:
     def __init__(self, nameservers: Optional[List[str]] = None,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
+        if(sys.platform == 'win32'):
+            if(type(loop) != asyncio.SelectorEventLoop):
+                raise RuntimeError(
+                    'aiodns should use SelectorEventLoop on Windows\nSee more: https://github.com/saghul/aiodns/issues/86')
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
-        self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb, **kwargs)
+        self._channel = pycares.Channel(
+            sock_state_cb=self._sock_state_cb, **kwargs)
         if nameservers:
             self.nameservers = nameservers
-        self._read_fds = set() # type: Set[int]
-        self._write_fds = set() # type: Set[int]
+        self._read_fds = set()  # type: Set[int]
+        self._write_fds = set()  # type: Set[int]
         self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     @property
@@ -70,11 +77,12 @@ class DNSResolver:
         if fut.cancelled():
             return
         if errorno is not None:
-            fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
+            fut.set_exception(error.DNSError(
+                errorno, pycares.errno.strerror(errorno)))
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str, qclass: str=None) -> asyncio.Future:
+    def query(self, host: str, qtype: str, qclass: str = None) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -140,7 +148,8 @@ class DNSResolver:
 
     def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
-            self._channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
+            self._channel.process_fd(
+                pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
             self._timer = self.loop.call_later(1.0, self._timer_cb)
         else:
             self._timer = None

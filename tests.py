@@ -2,6 +2,7 @@
 
 import asyncio
 import ipaddress
+import selectors
 import unittest
 import socket
 import sys
@@ -11,7 +12,12 @@ import aiodns
 
 class DNSTest(unittest.TestCase):
     def setUp(self):
-        self.loop = asyncio.new_event_loop()
+        if(sys.platform == 'win32'):
+            self.loop = asyncio.SelectorEventLoop(
+                selectors.SelectSelector())
+        else:
+            self.loop = asyncio.get_event_loop()
+
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
         self.resolver.nameservers = ['8.8.8.8']
@@ -78,7 +84,8 @@ class DNSTest(unittest.TestCase):
 
     def test_query_ptr(self):
         ip = '8.8.8.8'
-        f = self.resolver.query(ipaddress.ip_address(ip).reverse_pointer, 'PTR')
+        f = self.resolver.query(
+            ipaddress.ip_address(ip).reverse_pointer, 'PTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
@@ -93,7 +100,8 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_bad_class(self):
-        self.assertRaises(ValueError, self.resolver.query, 'google.com', 'A', "INVALIDCLASS")
+        self.assertRaises(ValueError, self.resolver.query,
+                          'google.com', 'A', "INVALIDCLASS")
 
     def test_query_timeout(self):
         self.resolver = aiodns.DNSResolver(timeout=0.1, loop=self.loop)
@@ -115,6 +123,7 @@ class DNSTest(unittest.TestCase):
     def test_future_cancel(self):
         f = self.resolver.query('google.com', 'A')
         f.cancel()
+
         async def coro():
             await asyncio.sleep(0.1)
             await f
