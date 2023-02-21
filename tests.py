@@ -12,7 +12,7 @@ import aiodns
 
 class DNSTest(unittest.TestCase):
     def setUp(self):
-        if(sys.platform == 'win32'):
+        if sys.platform == 'win32':
             self.loop = asyncio.SelectorEventLoop(
                 selectors.SelectSelector())
         else:

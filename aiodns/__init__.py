@@ -48,7 +48,7 @@ class DNSResolver:
     def __init__(self, nameservers: Optional[List[str]] = None,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
-        if(sys.platform == 'win32'):
+        if sys.platform == 'win32':
             if(type(loop) != asyncio.SelectorEventLoop):
                 raise RuntimeError(
                     'aiodns need a SelectorEventLoop on Windows\nSee more: https://github.com/saghul/aiodns/issues/86')
