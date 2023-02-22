@@ -49,7 +49,7 @@ class DNSResolver:
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
         if sys.platform == 'win32':
-            if(type(loop) != asyncio.SelectorEventLoop):
+            if type(loop) != asyncio.SelectorEventLoop:
                 raise RuntimeError(
                     'aiodns need a SelectorEventLoop on Windows\nSee more: https://github.com/saghul/aiodns/issues/86')
         self.loop = loop or asyncio.get_event_loop()
