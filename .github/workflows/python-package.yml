@@ -1,0 +1,32 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: Test on ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10-dev', 'pypy-3.6', 'pypy-3.7' ]
+        exclude:
+          - os: windows-2019
+            python-version: 3.10-dev
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install wheel
+      run: pip install wheel
+    - name: Build package
+      run: python setup.py install
+    - name: Run tests
+      run: python tests.py
+    - name: Run mypy tests
+      run: python mypy_run.py
