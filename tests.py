@@ -13,8 +13,7 @@ import aiodns
 class DNSTest(unittest.TestCase):
     def setUp(self):
         if sys.platform == 'win32':
-            self.loop = asyncio.SelectorEventLoop(
-                selectors.SelectSelector())
+            self.loop = asyncio.SelectorEventLoop(selectors.SelectSelector())
         else:
             self.loop = asyncio.get_event_loop()
         self.addCleanup(self.loop.close)
