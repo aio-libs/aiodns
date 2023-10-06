@@ -91,6 +91,22 @@ class DNSResolver:
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
+    def search(self, host: str, qtype: str, qclass: str=None) -> asyncio.Future:
+        try:
+            qtype = query_type_map[qtype]
+        except KeyError:
+            raise ValueError('invalid query type: {}'.format(qtype))
+        if qclass is not None:
+            try:
+                qclass = query_class_map[qclass]
+            except KeyError:
+                raise ValueError('invalid query class: {}'.format(qclass))
+
+        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+        cb = functools.partial(self._callback, fut)
+        self._channel.search(host, qtype, cb, query_class=qclass)
+        return fut
+
     def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
