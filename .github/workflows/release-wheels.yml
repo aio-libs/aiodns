@@ -8,7 +8,7 @@ on:
 jobs:
   build_wheels:
     name: Build wheels
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +25,7 @@ jobs:
 
   build_sdist:
     name: Build source distribution
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -40,7 +40,7 @@ jobs:
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     # upload to PyPI when a GitHub Release is created
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
