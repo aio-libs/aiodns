@@ -9,7 +9,7 @@ from typing import (
     List,
     Optional,
     Set,
-    Union
+    Sequence
 )
 
 from . import error
@@ -45,7 +45,7 @@ query_class_map = {'IN'    : pycares.QUERY_CLASS_IN,
                    }
 
 class DNSResolver:
-    def __init__(self, nameservers: Optional[List[str]] = None,
+    def __init__(self, nameservers: Optional[Sequence[str]] = None,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  **kwargs: Any) -> None:
         self.loop = loop or asyncio.get_event_loop()
@@ -59,11 +59,11 @@ class DNSResolver:
         self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     @property
-    def nameservers(self) -> List[Union[str, bytes]]:
+    def nameservers(self) -> Sequence[str]:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value: List[str]) -> None:
+    def nameservers(self, value: Sequence[str]) -> None:
         self._channel.servers = value
 
     @staticmethod
@@ -75,7 +75,7 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str, qclass: str=None) -> asyncio.Future:
+    def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
