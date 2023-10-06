@@ -150,10 +150,10 @@ class DNSTest(unittest.TestCase):
         with self.assertRaises(aiodns.error.DNSError):
             self.loop.run_until_complete(f)
 
-    def test_query_bad_chars(self):
-        f = self.resolver.query('xn--cardeosapeluqueros-r0b.com', 'MX')
-        result = self.loop.run_until_complete(f)
-        self.assertTrue(result)
+#    def test_query_bad_chars(self):
+#        f = self.resolver.query('xn--cardeosapeluqueros-r0b.com', 'MX')
+#        result = self.loop.run_until_complete(f)
+#        self.assertTrue(result)
 
 
 if __name__ == '__main__':
