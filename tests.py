@@ -137,6 +137,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
+    @unittest.skipIf(sys.platform == 'win32', 'skipped on Windows')
     def test_gethostbyaddr(self):
         f = self.resolver.gethostbyaddr('127.0.0.1')
         result = self.loop.run_until_complete(f)
