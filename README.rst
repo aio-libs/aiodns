@@ -55,6 +55,21 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
   ``ARES_ECANCELLED`` errno.
 
 
+Note for Windows users
+======================
+
+This library requires the asyncio loop to be a `SelectorEventLoop`, which is not the default on Windows since
+Python 3.8.
+
+The default can be changed as follows (do this very early in your application):
+
+.. code:: python
+
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+This may have other implications for the rest of your codebase, so make sure to test thoroughly.
+
+
 Running the test suite
 ======================
 
