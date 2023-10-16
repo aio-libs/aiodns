@@ -99,7 +99,7 @@ class DNSTest(unittest.TestCase):
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'A', "INVALIDCLASS")
 
     def test_query_timeout(self):
-        self.resolver = aiodns.DNSResolver(timeout=0.1, loop=self.loop)
+        self.resolver = aiodns.DNSResolver(timeout=0.1, tries=1, loop=self.loop)
         self.resolver.nameservers = ['1.2.3.4']
         f = self.resolver.query('google.com', 'A')
         started = time.monotonic()
