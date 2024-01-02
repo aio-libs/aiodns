@@ -80,7 +80,7 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_ptr(self):
-        ip = '8.8.8.8'
+        ip = '172.253.122.26'
         f = self.resolver.query(ipaddress.ip_address(ip).reverse_pointer, 'PTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
