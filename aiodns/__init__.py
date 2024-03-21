@@ -52,8 +52,14 @@ class DNSResolver:
         assert self.loop is not None
         if sys.platform == 'win32':
             if not isinstance(self.loop, asyncio.SelectorEventLoop):
-                raise RuntimeError(
-                    'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                try:
+                    import winloop
+                    if not isinstance(self.loop , winloop.Loop):
+                        raise RuntimeError(
+                            'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                except ModuleNotFoundError:
+                    raise RuntimeError(
+                        'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
