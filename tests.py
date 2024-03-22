@@ -15,7 +15,7 @@ try:
         skip_uvloop = False
     else:
         import uvloop 
-        skip_uvloop = True
+        skip_uvloop = False
 except ModuleNotFoundError:
     skip_uvloop = True
 
