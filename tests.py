@@ -9,6 +9,16 @@ import time
 
 import aiodns
 
+try:
+    if sys.platform == "win32":
+        import winloop as uvloop
+        skip_uvloop = False
+    else:
+        import uvloop 
+        skip_uvloop = False
+except ModuleNotFoundError:
+    skip_uvloop = True
+
 
 class DNSTest(unittest.TestCase):
     def setUp(self):
@@ -162,6 +172,14 @@ class DNSTest(unittest.TestCase):
 #        result = self.loop.run_until_complete(f)
 #        self.assertTrue(result)
 
+@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+class TestUV_DNS(DNSTest):
+    def setUp(self):
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        self.loop = asyncio.new_event_loop()
+        self.addCleanup(self.loop.close)
+        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
+        self.resolver.nameservers = ['8.8.8.8']
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
