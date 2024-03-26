@@ -151,6 +151,26 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
+    def test_getaddrinfo_address_family_0(self):
+        f = self.resolver.getaddrinfo('google.com')
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertTrue(len(result.nodes) > 1)
+
+    def test_getaddrinfo_address_family_af_inet(self):
+        f = self.resolver.getaddrinfo('google.com', socket.AF_INET)
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertTrue(len(result.nodes) == 1)
+        self.assertTrue(result.nodes[0].family == socket.AF_INET)
+
+    def test_getaddrinfo_address_family_af_inet6(self):
+        f = self.resolver.getaddrinfo('google.com', socket.AF_INET6)
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertTrue(len(result.nodes) == 1)
+        self.assertTrue(result.nodes[0].family == socket.AF_INET6)
+
     @unittest.skipIf(sys.platform == 'win32', 'skipped on Windows')
     def test_gethostbyaddr(self):
         f = self.resolver.gethostbyaddr('127.0.0.1')
