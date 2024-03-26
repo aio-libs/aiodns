@@ -111,7 +111,7 @@ class DNSResolver:
         self._channel.gethostbyname(host, family, cb)
         return fut
     
-    def getaddrinfo(self, host: str, family: socket.AddressFamily = 0, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future:
+    def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future:
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
