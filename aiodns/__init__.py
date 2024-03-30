@@ -9,7 +9,9 @@ from typing import (
     Any,
     Optional,
     Set,
-    Sequence
+    Sequence,
+    Tuple,
+    Union
 )
 
 from . import error
@@ -115,6 +117,12 @@ class DNSResolver:
         fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
+        return fut
+
+    def getnameinfo(self, sockaddr: Union[Tuple[str, int], Tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future:
+        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+        cb = functools.partial(self._callback, fut)
+        self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
     def gethostbyaddr(self, name: str) -> asyncio.Future:

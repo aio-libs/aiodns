@@ -169,6 +169,18 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
         self.assertTrue(all(node.family == socket.AF_INET6 for node in result.nodes))
 
+    def test_getnameinfo_ipv4(self):
+        f = self.resolver.getnameinfo(('127.0.0.1', 0))
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertTrue(result.node)
+
+    def test_getnameinfo_ipv6(self):
+        f = self.resolver.getnameinfo(('::1', 0, 0, 0))
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertTrue(result.node)
+
     @unittest.skipIf(sys.platform == 'win32', 'skipped on Windows')
     def test_gethostbyaddr(self):
         f = self.resolver.gethostbyaddr('127.0.0.1')
