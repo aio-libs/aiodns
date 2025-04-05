@@ -2,3 +2,4 @@
 pycares==4.5.0
 pytest==8.3.5
 pytest-cov==6.1.0
+uvloop==0.21.0
