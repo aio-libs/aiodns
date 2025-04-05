@@ -211,5 +211,5 @@ class TestUV_DNS(DNSTest):
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
         self.resolver.nameservers = ['8.8.8.8']
 
-if __name__ == '__main__':
+if __name__ == "__main__":  # pragma: no cover
     unittest.main(verbosity=2)
