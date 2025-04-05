@@ -58,8 +58,7 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
 Note for Windows users
 ======================
 
-This library requires the asyncio loop to be a `SelectorEventLoop`, which is not the default on Windows since
-Python 3.8.
+This library requires the asyncio loop to be a `SelectorEventLoop`, which is not the default on Windows.
 
 The default can be changed as follows (do this very early in your application):
 
@@ -86,12 +85,6 @@ License
 =======
 
 aiodns uses the MIT license, check LICENSE file.
-
-
-Python versions
-===============
-
-Python >= 3.6 are supported.
 
 
 Contributing
