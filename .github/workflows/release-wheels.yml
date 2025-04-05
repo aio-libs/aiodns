@@ -19,7 +19,7 @@ jobs:
       - run: pip install setuptools wheel
       - name: Build wheels
         run: python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*.whl
 
@@ -35,7 +35,7 @@ jobs:
       - run: pip install setuptools
       - name: Build sdist
         run: python setup.py sdist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
 
