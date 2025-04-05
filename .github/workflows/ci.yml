@@ -47,7 +47,7 @@ jobs:
             python-version: 3.9
         include:
           - python-version: pypy-3.9
-            os: ubuntu
+            os: ubuntu-latest
     timeout-minutes: 15
     steps:
     - name: Checkout
