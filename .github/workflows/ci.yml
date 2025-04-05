@@ -39,18 +39,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy-3.8', 'pypy-3.9', 'pypy-3.10' ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12' ]
         exclude:
           - os: macos-latest
             python-version: 3.8
           - os: macos-latest
             python-version: 3.9
-          - os: macos-latest
-            python-version: pypy-3.8
-          - os: macos-latest
-            python-version: pypy-3.9
-          - os: macos-latest
-            python-version: pypy-3.10
+        include:
+          - python-version: pypy-3.9
+            os: ubuntu
     timeout-minutes: 15
     steps:
     - name: Checkout
@@ -75,3 +72,16 @@ jobs:
       with:
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  check:  # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs: [lint, test]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@release/v1
+      with:
+        jobs: ${{ toJSON(needs) }}
