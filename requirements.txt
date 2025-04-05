@@ -2,4 +2,5 @@
 pycares==4.5.0
 pytest==8.3.5
 pytest-cov==6.1.0
-uvloop==0.21.0
+uvloop==0.21.0; sys_platform == "linux"
+winloop==0.1.8; platform_system == "Windows"
