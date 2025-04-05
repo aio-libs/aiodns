@@ -3,32 +3,83 @@ name: CI
 on: [pull_request]
 
 jobs:
-  build:
-    name: Test on ${{ matrix.os }} / Python ${{ matrix.python-version }}
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+        cache: 'pip'
+        cache-dependency-path: '**/requirements*.txt'
+    - name: Install dependencies
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: requirements-dev.txt
+    - name: Install itself
+      run: |
+        pip install .
+    - name: Run mypy
+      run: python mypy_run.py
+    - name: Prepare twine checker
+      run: |
+        pip install -U build twine wheel
+        python -m build
+    - name: Run twine checker
+      run: |
+        twine check dist/*
+
+  test:
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [ '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy-3.9', 'pypy-3.10' ]
+        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
         exclude:
           - os: macos-latest
             python-version: 3.9
-          - os: macos-latest
-            python-version: pypy-3.9
-          - os: macos-latest
-            python-version: pypy-3.10
+        include:
+          - python-version: pypy-3.9
+            os: ubuntu-latest
+    timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v4
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install wheel
-      run: pip install setuptools wheel
-    - name: Build package
-      run: python setup.py install
-    - name: Run tests
-      run: python tests.py
-    - name: Run mypy tests
-      run: python mypy_run.py
+        cache: 'pip'
+        cache-dependency-path: '**/requirements*.txt'
+    - name: Install dependencies
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: requirements.txt
+    - name: Run unittests
+      run: pytest tests
+      env:
+        COLOR: 'yes'
+    - run: python -m coverage xml
+    - name: Upload coverage
+      uses: codecov/codecov-action@v5
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  check:  # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs: [lint, test]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@release/v1
+      with:
+        jobs: ${{ toJSON(needs) }}
