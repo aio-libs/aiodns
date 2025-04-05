@@ -1,18 +1,11 @@
-
 import asyncio
 import functools
-import pycares
 import socket
 import sys
+from collections.abc import Iterable, Sequence
+from typing import Any, Optional, TypeVar, Union
 
-from typing import (
-    Any,
-    Optional,
-    Set,
-    Sequence,
-    Tuple,
-    Union
-)
+import pycares
 
 from . import error
 
@@ -20,6 +13,8 @@ from . import error
 __version__ = '3.2.0'
 
 __all__ = ('DNSResolver', 'error')
+
+_T = TypeVar("_T")
 
 
 READ = 1
@@ -49,7 +44,7 @@ query_class_map = {'IN'    : pycares.QUERY_CLASS_IN,
 class DNSResolver:
     def __init__(self, nameservers: Optional[Sequence[str]] = None,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
-                 **kwargs: Any) -> None:
+                 **kwargs: Any) -> None:  # TODO(PY311): Use Unpack for kwargs.
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
         if sys.platform == 'win32':
@@ -70,20 +65,20 @@ class DNSResolver:
                                         **kwargs)
         if nameservers:
             self.nameservers = nameservers
-        self._read_fds = set() # type: Set[int]
-        self._write_fds = set() # type: Set[int]
-        self._timer = None  # type: Optional[asyncio.TimerHandle]
+        self._read_fds: set[int] = set()
+        self._write_fds: set[int] = set()
+        self._timer: Optional[asyncio.TimerHandle] = None
 
     @property
     def nameservers(self) -> Sequence[str]:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value: Sequence[str]) -> None:
+    def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
         self._channel.servers = value
 
     @staticmethod
-    def _callback(fut: asyncio.Future, result: Any, errorno: int) -> None:
+    def _callback(fut: asyncio.Future[_T], result: _T, errorno: Optional[int]) -> None:
         if fut.cancelled():
             return
         if errorno is not None:
@@ -91,7 +86,7 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future:
+    def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future[Any]:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -102,31 +97,31 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
-    def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+    def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future[Any]:
+        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
         return fut
     
-    def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+    def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future[Any]:
+        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
         return fut
 
-    def getnameinfo(self, sockaddr: Union[Tuple[str, int], Tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+    def getnameinfo(self, sockaddr: Union[tuple[str, int], tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future[Any]:
+        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
-    def gethostbyaddr(self, name: str) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+    def gethostbyaddr(self, name: str) -> asyncio.Future[Any]:
+        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyaddr(name, cb)
         return fut
@@ -158,7 +153,7 @@ class DNSResolver:
                 self._timer.cancel()
                 self._timer = None
 
-    def _handle_event(self, fd: int, event: Any) -> None:
+    def _handle_event(self, fd: int, event: int) -> None:
         read_fd = pycares.ARES_SOCKET_BAD
         write_fd = pycares.ARES_SOCKET_BAD
         if event == READ:
@@ -174,7 +169,7 @@ class DNSResolver:
         else:
             self._timer = None
 
-    def _start_timer(self):
+    def _start_timer(self) -> None:
         timeout = self._timeout
         if timeout is None or timeout < 0 or timeout > 1:
             timeout = 1
