@@ -23,16 +23,24 @@ jobs:
           - os: macos-latest
             python-version: pypy-3.10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install wheel
-      run: pip install setuptools wheel
-    - name: Build package
-      run: python setup.py install
-    - name: Run tests
-      run: python tests.py
-    - name: Run mypy tests
-      run: python mypy_run.py
+        cache: 'pip'
+        cache-dependency-path: '**/requirements*.txt'
+    - name: Install dependencies
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: requirements.txt
+    - name: Run unittests
+      run: pytest tests
+      env:
+        COLOR: 'yes'
+    - run: python -m coverage xml
+    - name: Upload coverage
+      uses: codecov/codecov-action@v5
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
