@@ -119,7 +119,7 @@ class DNSResolver:
     @overload
     def query(self, host: str, qtype: Literal["TXT"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_txt_result]]:
         ...
-    def query(self, host: str, qtype: str, qclass: Optional[str] = None) -> asyncio.Future[list[pycares.AresResult]]:
+    def query(self, host: str, qtype: str, qclass: Optional[str] = None) -> asyncio.Future[Sequence[pycares.AresResult]]:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
