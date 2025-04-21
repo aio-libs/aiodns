@@ -6,7 +6,8 @@ import unittest
 import socket
 import sys
 import time
-from typing import Any
+
+import pycares
 
 import aiodns
 
@@ -38,7 +39,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
 
     def test_query_async_await(self) -> None:
-        async def f() -> Any:
+        async def f() -> pycares.ares_query_a_result:
             return await self.resolver.query('google.com', 'A')
         result = self.loop.run_until_complete(f())
         self.assertTrue(result)
