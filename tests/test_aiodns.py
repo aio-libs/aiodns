@@ -39,7 +39,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
 
     def test_query_async_await(self) -> None:
-        async def f() -> pycares.ares_query_a_result:
+        async def f() -> list[pycares.ares_query_a_result]:
             return await self.resolver.query('google.com', 'A')
         result = self.loop.run_until_complete(f())
         self.assertTrue(result)
