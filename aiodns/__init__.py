@@ -130,7 +130,7 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut: asyncio.Future[list[pycares.AresResult]] = asyncio.Future(loop=self.loop)
+        fut: asyncio.Future[Sequence[pycares.AresResult]] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
