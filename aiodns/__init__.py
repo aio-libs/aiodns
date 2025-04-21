@@ -86,7 +86,40 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future[Any]:
+    @overload
+    def query(self, host: str, qtype: Literal["A"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_a_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["AAAA"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_aaaa_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["CAA"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_caa_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["CNAME"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_cname_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["MX"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_mx_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["NAPTR"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_naptr_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["NS"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_ns_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["PTR"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_ptr_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["SOA"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_soa_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["SRV"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_srv_result]]:
+        ...
+    @overload
+    def query(self, host: str, qtype: Literal["TXT"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_txt_result]]:
+        ...
+    def query(self, host: str, qtype: str, qclass: Optional[str] = None) -> asyncio.Future[list[pycares.AresResult]]:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -97,31 +130,31 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
+        fut: asyncio.Future[list[pycares.AresResult]] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
-    def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future[Any]:
-        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
+    def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future[pycares.ares_host_result]:
+        fut: asyncio.Future[pycares.ares_host_result] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyname(host, family, cb)
         return fut
     
-    def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future[Any]:
-        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
+    def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future[pycares.ares_addrinfo_result]:
+        fut: asyncio.Future[pycares.ares_addrinfo_result] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
         return fut
 
-    def getnameinfo(self, sockaddr: Union[tuple[str, int], tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future[Any]:
-        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
+    def getnameinfo(self, sockaddr: Union[tuple[str, int], tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future[pycares.ares_nameinfo_result]:
+        fut: asyncio.Future[pycares.ares_nameinfo_result] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
-    def gethostbyaddr(self, name: str) -> asyncio.Future[Any]:
-        fut: asyncio.Future[Any] = asyncio.Future(loop=self.loop)
+    def gethostbyaddr(self, name: str) -> asyncio.Future[pycares.ares_host_result]:
+        fut: asyncio.Future[pycares.ares_host_result] = asyncio.Future(loop=self.loop)
         cb = functools.partial(self._callback, fut)
         self._channel.gethostbyaddr(name, cb)
         return fut
