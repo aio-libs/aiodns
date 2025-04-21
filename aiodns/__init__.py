@@ -3,7 +3,7 @@ import functools
 import socket
 import sys
 from collections.abc import Iterable, Sequence
-from typing import Any, Optional, TypeVar, Union, overload
+from typing import Any, Literal, Optional, TypeVar, Union, overload
 
 import pycares
 
