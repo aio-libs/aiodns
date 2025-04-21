@@ -19,7 +19,7 @@ jobs:
       - run: pip install setuptools wheel
       - name: Build wheels
         run: python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*.whl
 
@@ -35,7 +35,7 @@ jobs:
       - run: pip install setuptools
       - name: Build sdist
         run: python setup.py sdist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
 
@@ -45,7 +45,7 @@ jobs:
     # upload to PyPI when a GitHub Release is created
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4.2.1
         with:
           name: artifact
           path: dist

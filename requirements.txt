@@ -1,4 +1,6 @@
 -e .
 pycares==4.6.1
 pytest==8.3.5
-pytest-cov==6.1.0
+pytest-cov==6.1.1
+uvloop==0.21.0; platform_system != "Windows" and implementation_name == "cpython"
+winloop==0.1.8; platform_system == "Windows"
