@@ -59,7 +59,7 @@ class DNSResolver:
         self._event_thread = hasattr(pycares,"ares_threadsafety") and pycares.ares_threadsafety()
         if self._event_thread:
             # pycares is thread safe
-            self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
+            self._channel = pycares.Channel(event_thread=True,
                                             timeout=timeout,
                                             **kwargs)
         else:
@@ -73,7 +73,7 @@ class DNSResolver:
                     except ModuleNotFoundError:
                         raise RuntimeError(
                             'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
-            self._channel = pycares.Channel(event_thread=True,
+            self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
                                             timeout=timeout,
                                             **kwargs)
         if nameservers:
