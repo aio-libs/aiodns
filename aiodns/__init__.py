@@ -80,7 +80,7 @@ class DNSResolver:
 
     @nameservers.setter
     def nameservers(self, value: Sequence[str]) -> None:
-        self._channel.servers = value
+        self._channel.servers = list(value) if not isinstance(value, list) else value
 
     @staticmethod
     def _callback(fut: asyncio.Future, result: Any, errorno: int) -> None:
