@@ -63,16 +63,15 @@ class DNSResolver:
                                             timeout=timeout,
                                             **kwargs)
         else:
-            if sys.platform == 'win32':
-                if not isinstance(self.loop, asyncio.SelectorEventLoop):
-                    try:
-                        import winloop
-                        if not isinstance(self.loop , winloop.Loop):
-                            raise RuntimeError(
-                                'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
-                    except ModuleNotFoundError:
+            if sys.platform == 'win32' and not isinstance(self.loop, asyncio.SelectorEventLoop):
+                try:
+                    import winloop
+                    if not isinstance(self.loop , winloop.Loop):
                         raise RuntimeError(
                             'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                except ModuleNotFoundError:
+                    raise RuntimeError(
+                        'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
             self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
                                             timeout=timeout,
                                             **kwargs)
