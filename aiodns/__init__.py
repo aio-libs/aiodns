@@ -120,8 +120,7 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut = self.loop.create_future()  # type: asyncio.Future
-        cb = functools.partial(self._callback, fut)
+        fut, cb = self._get_future_callback()
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
