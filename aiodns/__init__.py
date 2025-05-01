@@ -7,6 +7,7 @@ import sys
 
 from typing import (
     Any,
+    Callable,
     Optional,
     Set,
     Sequence,
@@ -52,22 +53,29 @@ class DNSResolver:
                  **kwargs: Any) -> None:
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
-        if sys.platform == 'win32':
-            if not isinstance(self.loop, asyncio.SelectorEventLoop):
-                try:
-                    import winloop
-                    if not isinstance(self.loop , winloop.Loop):
-                        raise RuntimeError(
-                            'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
-                except ModuleNotFoundError:
-                    raise RuntimeError(
-                        'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
-        self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
-                                        timeout=timeout,
-                                        **kwargs)
+        self._event_thread = hasattr(pycares,"ares_threadsafety") and pycares.ares_threadsafety()
+        if self._event_thread:
+            # pycares is thread safe
+            self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
+                                            timeout=timeout,
+                                            **kwargs)
+        else:
+            if sys.platform == 'win32':
+                if not isinstance(self.loop, asyncio.SelectorEventLoop):
+                    try:
+                        import winloop
+                        if not isinstance(self.loop , winloop.Loop):
+                            raise RuntimeError(
+                                'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                    except ModuleNotFoundError:
+                        raise RuntimeError(
+                            'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+            self._channel = pycares.Channel(event_thread=True,
+                                            timeout=timeout,
+                                            **kwargs)
         if nameservers:
             self.nameservers = nameservers
         self._read_fds = set() # type: Set[int]
@@ -91,6 +99,15 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
+    def _get_future_callback(self) -> Tuple[asyncio.Future, Callable[[Any, int], None]]:
+        """Return a future and a callback to set the result of the future."""
+        future = self.loop.create_future()  # type: asyncio.Future
+        if self._event_thread:
+            cb = functools.partial(self.loop.call_soon_threadsafe, self._callback, future)
+        else:
+            cb = functools.partial(self._callback, future)
+        return future, cb
+
     def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future:
         try:
             qtype = query_type_map[qtype]
@@ -102,32 +119,28 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
+        fut = self.loop.create_future()  # type: asyncio.Future
         cb = functools.partial(self._callback, fut)
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
     def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
-        cb = functools.partial(self._callback, fut)
+        fut, cb = self._get_future_callback()
         self._channel.gethostbyname(host, family, cb)
         return fut
     
     def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
-        cb = functools.partial(self._callback, fut)
+        fut, cb = self._get_future_callback()
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
         return fut
 
     def getnameinfo(self, sockaddr: Union[Tuple[str, int], Tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
-        cb = functools.partial(self._callback, fut)
+        fut, cb = self._get_future_callback()
         self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
     def gethostbyaddr(self, name: str) -> asyncio.Future:
-        fut = asyncio.Future(loop=self.loop)  # type: asyncio.Future
-        cb = functools.partial(self._callback, fut)
+        fut, cb = self._get_future_callback()
         self._channel.gethostbyaddr(name, cb)
         return fut
 
