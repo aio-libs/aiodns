@@ -99,7 +99,7 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def _get_future_callback(self) -> Tuple[asyncio.Future, Callable[[Any, int], asyncio.Handle | None]]:
+    def _get_future_callback(self) -> Tuple["asyncio.Future[Any]", Callable[[Any, int], asyncio.Handle | None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[Any, int], asyncio.Handle | None]
         future: "asyncio.Future[Any]" = self.loop.create_future()
