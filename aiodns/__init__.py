@@ -75,7 +75,7 @@ class DNSResolver:
 
     @nameservers.setter
     def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
-        self._channel.servers = value if isinstance(value, list) else list(value)
+        self._channel.servers = value
 
     @staticmethod
     def _callback(fut: asyncio.Future[_T], result: _T, errorno: Optional[int]) -> None:
