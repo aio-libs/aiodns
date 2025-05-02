@@ -100,7 +100,7 @@ class DNSResolver:
 
     def _get_future_callback(self) -> Tuple["asyncio.Future[Any]", Callable[[Any, int], None]]:
         """Return a future and a callback to set the result of the future."""
-        cb: Callable[[Any, int], Union[asyncio.Handle, None]]
+        cb: Callable[[Any, int], None]
         future: "asyncio.Future[Any]" = self.loop.create_future()
         if self._event_thread:
             cb = functools.partial(self.loop.call_soon_threadsafe, self._callback, future)  # type: ignore[arg-type]
