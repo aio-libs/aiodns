@@ -225,7 +225,8 @@ class TestNoEventThreadDNS(DNSTest):
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
 def test_win32_no_selector_event_loop():
     """Test DNSResolver with Windows without SelectorEventLoop."""
-    with ( 
+    asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+    with (
         pytest.raises(RuntimeError, match="aiodns needs a SelectorEventLoop on Windows"),
         unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False)
     ):
