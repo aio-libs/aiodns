@@ -3,6 +3,7 @@
 import asyncio
 import ipaddress
 import unittest
+import pytest
 import socket
 import sys
 import time
@@ -222,15 +223,13 @@ class TestNoEventThreadDNS(DNSTest):
 
 
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
-class TestWinDNSWithoutSelectorOrEventThread(DNSTest):
-    """Test DNSResolver with no event thread and no selector."""
-
-    def setUp(self):
-        with unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False):
-            self.loop = asyncio.new_event_loop()
-            self.addCleanup(self.loop.close)
-            self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
-            self.resolver.nameservers = ['8.8.8.8']
+def test_win32_no_selector_event_loop():
+    """Test DNSResolver with Windows without SelectorEventLoop."""
+    with ( 
+        pytest.raises(RuntimeError, match="aiodns needs a SelectorEventLoop on Windows"),
+        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False)
+    ):
+        aiodns.DNSResolver(loop=asyncio.new_event_loop(), timeout=5.0)
 
 
 if __name__ == "__main__":  # pragma: no cover
