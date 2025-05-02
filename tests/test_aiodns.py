@@ -3,9 +3,11 @@
 import asyncio
 import ipaddress
 import unittest
+import pytest
 import socket
 import sys
 import time
+import unittest.mock
 
 import pycares
 
@@ -212,6 +214,26 @@ class TestUV_DNS(DNSTest):
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
         self.resolver.nameservers = ['8.8.8.8']
+
+
+class TestNoEventThreadDNS(DNSTest):
+    """Test DNSResolver with no event thread."""
+
+    def setUp(self):
+        with unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False):
+            super().setUp()
+
+
+@unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
+def test_win32_no_selector_event_loop():
+    """Test DNSResolver with Windows without SelectorEventLoop."""
+    asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+    with (
+        pytest.raises(RuntimeError, match="aiodns needs a SelectorEventLoop on Windows"),
+        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False)
+    ):
+        aiodns.DNSResolver(loop=asyncio.new_event_loop(), timeout=5.0)
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main(verbosity=2)

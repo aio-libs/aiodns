@@ -6,6 +6,15 @@ from collections.abc import Iterable, Sequence
 from typing import Any, Literal, Optional, TypeVar, Union, overload
 
 import pycares
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Set,
+    Sequence,
+    Tuple,
+    Union
+)
 
 from . import error
 
@@ -15,6 +24,11 @@ __version__ = '3.2.0'
 __all__ = ('DNSResolver', 'error')
 
 _T = TypeVar("_T")
+
+WINDOWS_SELECTOR_ERR_MSG = (
+    "aiodns needs a SelectorEventLoop on Windows. See more: "
+    "https://github.com/aio-libs/aiodns#note-for-windows-users"
+)
 
 
 READ = 1
@@ -47,22 +61,26 @@ class DNSResolver:
                  **kwargs: Any) -> None:  # TODO(PY311): Use Unpack for kwargs.
         self.loop = loop or asyncio.get_event_loop()
         assert self.loop is not None
-        if sys.platform == 'win32':
-            if not isinstance(self.loop, asyncio.SelectorEventLoop):
-                try:
-                    import winloop
-                    if not isinstance(self.loop , winloop.Loop):
-                        raise RuntimeError(
-                            'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
-                except ModuleNotFoundError:
-                    raise RuntimeError(
-                        'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
-        self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
-                                        timeout=timeout,
-                                        **kwargs)
+        self._event_thread = hasattr(pycares,"ares_threadsafety") and pycares.ares_threadsafety()
+        if self._event_thread:
+            # pycares is thread safe
+            self._channel = pycares.Channel(event_thread=True,
+                                            timeout=timeout,
+                                            **kwargs)
+        else:
+            if sys.platform == 'win32' and not isinstance(self.loop, asyncio.SelectorEventLoop):
+                try:
+                    import winloop
+                    if not isinstance(self.loop , winloop.Loop):
+                        raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
+                except ModuleNotFoundError:
+                    raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
+            self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
+                                            timeout=timeout,
+                                            **kwargs)
         if nameservers:
             self.nameservers = nameservers
         self._read_fds: set[int] = set()
@@ -85,6 +103,20 @@ class DNSResolver:
             fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
         else:
             fut.set_result(result)
+
+    def _get_future_callback(self) -> Tuple["asyncio.Future[_T]", Callable[[_T, int], None]]:
+        """Return a future and a callback to set the result of the future."""
+        cb: Callable[[_T, int], None]
+        future: "asyncio.Future[_T]" = self.loop.create_future()
+        if self._event_thread:
+            cb = functools.partial(  # type: ignore[assignment]
+                self.loop.call_soon_threadsafe,
+                self._callback,  # type: ignore[arg-type]
+                future
+            )
+        else:
+            cb = functools.partial(self._callback, future)
+        return future, cb
 
     @overload
     def query(self, host: str, qtype: Literal["A"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_a_result]]:
@@ -119,7 +151,8 @@ class DNSResolver:
     @overload
     def query(self, host: str, qtype: Literal["TXT"], qclass: Optional[str] = ...) -> asyncio.Future[list[pycares.ares_query_txt_result]]:
         ...
-    def query(self, host: str, qtype: str, qclass: Optional[str] = None) -> asyncio.Future[list[Any]]:
+
+    def query(self, host: str, qtype: str, qclass: Optional[str]=None) -> asyncio.Future[list[Any]]:
         try:
             qtype = query_type_map[qtype]
         except KeyError:
@@ -130,35 +163,35 @@ class DNSResolver:
             except KeyError:
                 raise ValueError('invalid query class: {}'.format(qclass))
 
-        fut: asyncio.Future[list[Any]] = asyncio.Future(loop=self.loop)
-        cb = functools.partial(self._callback, fut)
+        fut: asyncio.Future[list[Any]]
+        fut, cb = self._get_future_callback()
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
 
     def gethostbyname(self, host: str, family: socket.AddressFamily) -> asyncio.Future[pycares.ares_host_result]:
-        fut: asyncio.Future[pycares.ares_host_result] = asyncio.Future(loop=self.loop)
-        cb = functools.partial(self._callback, fut)
+        fut: asyncio.Future[pycares.ares_host_result]
+        fut, cb = self._get_future_callback()
         self._channel.gethostbyname(host, family, cb)
         return fut
     
     def getaddrinfo(self, host: str, family: socket.AddressFamily = socket.AF_UNSPEC, port: Optional[int] = None, proto: int = 0, type: int = 0, flags: int = 0) -> asyncio.Future[pycares.ares_addrinfo_result]:
-        fut: asyncio.Future[pycares.ares_addrinfo_result] = asyncio.Future(loop=self.loop)
-        cb = functools.partial(self._callback, fut)
+        fut: asyncio.Future[pycares.ares_addrinfo_result]
+        fut, cb = self._get_future_callback()
         self._channel.getaddrinfo(host, port, cb, family=family, type=type, proto=proto, flags=flags)
         return fut
 
     def getnameinfo(self, sockaddr: Union[tuple[str, int], tuple[str, int, int, int]], flags: int = 0) -> asyncio.Future[pycares.ares_nameinfo_result]:
-        fut: asyncio.Future[pycares.ares_nameinfo_result] = asyncio.Future(loop=self.loop)
-        cb = functools.partial(self._callback, fut)
+        fut: asyncio.Future[pycares.ares_nameinfo_result]
+        fut, cb = self._get_future_callback()
         self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
     def gethostbyaddr(self, name: str) -> asyncio.Future[pycares.ares_host_result]:
-        fut: asyncio.Future[pycares.ares_host_result] = asyncio.Future(loop=self.loop)
-        cb = functools.partial(self._callback, fut)
+        fut: asyncio.Future[pycares.ares_host_result]
+        fut, cb = self._get_future_callback()
         self._channel.gethostbyaddr(name, cb)
         return fut
-
+   
     def cancel(self) -> None:
         self._channel.cancel()
 
