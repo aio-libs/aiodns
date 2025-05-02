@@ -103,9 +103,9 @@ class DNSResolver:
         cb: Callable[[Any, int], None]
         future: "asyncio.Future[Any]" = self.loop.create_future()
         if self._event_thread:
-            cb = functools.partial(  # type: ignore[assignment, arg-type]
+            cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
-                self._callback,
+                self._callback,  # type: ignore[arg-type]
                 future
             )
         else:
