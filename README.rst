@@ -68,7 +68,7 @@ If you're using the official prebuilt ``pycares`` wheels (version 4.7.0 or
 later), which include a thread-safe version of ``c-ares``, this limitation does
 **not** apply and can be safely ignored.
 
-The default can be changed as follows (do this very early in your application):
+The default event loop can be changed as follows (do this very early in your application):
 
 .. code:: python
 
