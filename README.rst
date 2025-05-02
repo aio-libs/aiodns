@@ -58,7 +58,15 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
 Note for Windows users
 ======================
 
-This library requires the asyncio loop to be a `SelectorEventLoop`, which is not the default on Windows.
+This library requires the use of an ``asyncio.SelectorEventLoop`` on Windows
+**only** when using a custom build of ``pycares`` that links against a system-
+provided ``c-ares`` library **without** thread-safety support. This is because
+non-thread-safe builds of ``c-ares`` are incompatible with the default
+``ProactorEventLoop`` on Windows.
+
+If you're using the official prebuilt ``pycares`` wheels (version 4.7.0 or
+later), which include a thread-safe version of ``c-ares``, this limitation does
+**not** apply and can be safely ignored.
 
 The default can be changed as follows (do this very early in your application):
 
