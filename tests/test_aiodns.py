@@ -214,7 +214,7 @@ class TestUV_DNS(DNSTest):
 
 class TestNoEventThreadDNS(DNSTest):
     """Test DNSResolver with no event thread."""
-    
+
     def setUp(self):
         with unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False):
             super().setUp()
