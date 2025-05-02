@@ -64,7 +64,7 @@ provided ``c-ares`` library **without** thread-safety support. This is because
 non-thread-safe builds of ``c-ares`` are incompatible with the default
 ``ProactorEventLoop`` on Windows.
 
-If you're using the official prebuilt ``pycares`` wheels (version 4.7.0 or
+If you're using the official prebuilt ``pycares`` wheels on PyPI (version 4.7.0 or
 later), which include a thread-safe version of ``c-ares``, this limitation does
 **not** apply and can be safely ignored.
 
