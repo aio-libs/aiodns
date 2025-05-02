@@ -22,6 +22,11 @@ __version__ = '3.2.0'
 
 __all__ = ('DNSResolver', 'error')
 
+WINDOWS_SELECTOR_ERR_MSG = (
+    "aiodns needs a SelectorEventLoop on Windows. See more: "
+    "https://github.com/aio-libs/aiodns#note-for-windows-users"
+)
+
 
 READ = 1
 WRITE = 2
@@ -67,11 +72,9 @@ class DNSResolver:
                 try:
                     import winloop
                     if not isinstance(self.loop , winloop.Loop):
-                        raise RuntimeError(
-                            'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                        raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
                 except ModuleNotFoundError:
-                    raise RuntimeError(
-                        'aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86')
+                    raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
             self._channel = pycares.Channel(sock_state_cb=self._sock_state_cb,
                                             timeout=timeout,
                                             **kwargs)
