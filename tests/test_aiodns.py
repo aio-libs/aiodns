@@ -219,13 +219,13 @@ class TestUV_DNS(DNSTest):
 class TestNoEventThreadDNS(DNSTest):
     """Test DNSResolver with no event thread."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         with unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False):
             super().setUp()
 
 
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
-def test_win32_no_selector_event_loop():
+def test_win32_no_selector_event_loop() -> None:
     """Test DNSResolver with Windows without SelectorEventLoop."""
     asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
     with (
