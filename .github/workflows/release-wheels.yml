@@ -22,6 +22,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           path: dist/*.whl
+          name: artifact-wheels
 
   build_sdist:
     name: Build source distribution
@@ -38,19 +39,26 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
+          name: artifact-sdist
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for trusted publishing & sigstore
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aiodns
     # upload to PyPI when a GitHub Release is created
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: artifact
+          pattern: artifact-*
           path: dist
-
-      - uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.pypi_password }}
+          merge-multiple: true
+          
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        name: Publish package distributions to PyPI
