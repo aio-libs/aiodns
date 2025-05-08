@@ -79,13 +79,20 @@ class DNSResolver:
                 )
             except pycares.AresError as e:
                 if sys.platform == "linux":
-                    _LOGGER.debug(
-                        "Failed to create a DNS resolver channel, this usually means "
-                        "that the system ran out of inotify watches: %s",
+                    _LOGGER.warning(
+                        "Failed to create a DNS resolver channel with automatic monitoring of "
+                        "resolver configuration changes, this usually means the system ran "
+                        "out of inotify watches. Falling back to socket state callback. "
+                        "Consider increasing the system inotify watch limit: %s",
                         e,
                     )
                 else:
-                    _LOGGER.debug("Failed to create a DNS resolver channel: %s", e)
+                    _LOGGER.warning(
+                        "Failed to create a DNS resolver channel with automatic monitoring "
+                        "of resolver configuration changes. Falling back to socket state "
+                        "callback: %s",
+                        e,
+                    )
         if sys.platform == "win32" and not isinstance(
             self.loop, asyncio.SelectorEventLoop
         ):
