@@ -39,5 +39,8 @@ select = [
 "conftest.py" = ["D100"]
 "docs/conf.py" = ["D100"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["aiodns", "tests"]
+
+[tool.ruff.format]
+quote-style = "single"
