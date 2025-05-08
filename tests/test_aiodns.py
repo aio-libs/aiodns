@@ -342,9 +342,10 @@ def test_win32_winloop_not_loop_instance():
 
     original_import = __import__
 
-    # Create a mock winloop module with a Loop class
+    # Create a mock winloop module with a Loop class that's an actual type
+    class MockLoop: pass
     mock_winloop_module = unittest.mock.MagicMock()
-    mock_winloop_module.Loop = unittest.mock.MagicMock()
+    mock_winloop_module.Loop = MockLoop
 
     def mock_import(name, *args, **kwargs):
         if name == "winloop":
