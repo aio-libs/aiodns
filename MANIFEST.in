@@ -3,4 +3,3 @@ include setup.py tests.py
 include aiodns/py.typed
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
-
