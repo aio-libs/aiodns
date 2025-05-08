@@ -93,7 +93,7 @@ class DNSResolver:
 
     @nameservers.setter
     def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
-        self._channel.servers = value
+        self._channel.servers = value  # type: ignore[assignment] -- remove after mypy 1.16.0
 
     @staticmethod
     def _callback(fut: asyncio.Future[_T], result: _T, errorno: Optional[int]) -> None:
