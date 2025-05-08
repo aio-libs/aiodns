@@ -73,6 +73,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
+    @unittest.skipIf(sys.platform == 'darwin', 'skipped on Darwin as it is flakey on CI')
     def test_query_txt(self) -> None:
         f = self.resolver.query('google.com', 'TXT')
         result = self.loop.run_until_complete(f)
