@@ -20,15 +20,15 @@ import pycares
 
 from . import error
 
-__version__ = "3.4.0"
+__version__ = '3.4.0'
 
-__all__ = ("DNSResolver", "error")
+__all__ = ('DNSResolver', 'error')
 
-_T = TypeVar("_T")
+_T = TypeVar('_T')
 
 WINDOWS_SELECTOR_ERR_MSG = (
-    "aiodns needs a SelectorEventLoop on Windows. See more: "
-    "https://github.com/aio-libs/aiodns#note-for-windows-users"
+    'aiodns needs a SelectorEventLoop on Windows. See more: '
+    'https://github.com/aio-libs/aiodns#note-for-windows-users'
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,26 +37,26 @@ READ = 1
 WRITE = 2
 
 query_type_map = {
-    "A": pycares.QUERY_TYPE_A,
-    "AAAA": pycares.QUERY_TYPE_AAAA,
-    "ANY": pycares.QUERY_TYPE_ANY,
-    "CAA": pycares.QUERY_TYPE_CAA,
-    "CNAME": pycares.QUERY_TYPE_CNAME,
-    "MX": pycares.QUERY_TYPE_MX,
-    "NAPTR": pycares.QUERY_TYPE_NAPTR,
-    "NS": pycares.QUERY_TYPE_NS,
-    "PTR": pycares.QUERY_TYPE_PTR,
-    "SOA": pycares.QUERY_TYPE_SOA,
-    "SRV": pycares.QUERY_TYPE_SRV,
-    "TXT": pycares.QUERY_TYPE_TXT,
+    'A': pycares.QUERY_TYPE_A,
+    'AAAA': pycares.QUERY_TYPE_AAAA,
+    'ANY': pycares.QUERY_TYPE_ANY,
+    'CAA': pycares.QUERY_TYPE_CAA,
+    'CNAME': pycares.QUERY_TYPE_CNAME,
+    'MX': pycares.QUERY_TYPE_MX,
+    'NAPTR': pycares.QUERY_TYPE_NAPTR,
+    'NS': pycares.QUERY_TYPE_NS,
+    'PTR': pycares.QUERY_TYPE_PTR,
+    'SOA': pycares.QUERY_TYPE_SOA,
+    'SRV': pycares.QUERY_TYPE_SRV,
+    'TXT': pycares.QUERY_TYPE_TXT,
 }
 
 query_class_map = {
-    "IN": pycares.QUERY_CLASS_IN,
-    "CHAOS": pycares.QUERY_CLASS_CHAOS,
-    "HS": pycares.QUERY_CLASS_HS,
-    "NONE": pycares.QUERY_CLASS_NONE,
-    "ANY": pycares.QUERY_CLASS_ANY,
+    'IN': pycares.QUERY_CLASS_IN,
+    'CHAOS': pycares.QUERY_CLASS_CHAOS,
+    'HS': pycares.QUERY_CLASS_HS,
+    'NONE': pycares.QUERY_CLASS_NONE,
+    'ANY': pycares.QUERY_CLASS_ANY,
 }
 
 
@@ -70,8 +70,8 @@ class DNSResolver:
         self.loop = loop or asyncio.get_event_loop()
         if TYPE_CHECKING:
             assert self.loop is not None
-        kwargs.pop("sock_state_cb", None)
-        timeout = kwargs.pop("timeout", None)
+        kwargs.pop('sock_state_cb', None)
+        timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
         self._event_thread, self._channel = self._make_channel(**kwargs)
         if nameservers:
@@ -81,27 +81,27 @@ class DNSResolver:
         self._timer: Optional[asyncio.TimerHandle] = None
 
     def _make_channel(self, **kwargs: Any) -> Tuple[bool, pycares.Channel]:
-        if hasattr(pycares, "ares_threadsafety") and pycares.ares_threadsafety():
+        if hasattr(pycares, 'ares_threadsafety') and pycares.ares_threadsafety():
             # pycares is thread safe
             try:
                 return True, pycares.Channel(event_thread=True, timeout=self._timeout, **kwargs)
             except pycares.AresError as e:
-                if sys.platform == "linux":
+                if sys.platform == 'linux':
                     _LOGGER.warning(
-                        "Failed to create a DNS resolver channel with automatic monitoring of "
-                        "resolver configuration changes, this usually means the system ran "
-                        "out of inotify watches. Falling back to socket state callback. "
-                        "Consider increasing the system inotify watch limit: %s",
+                        'Failed to create a DNS resolver channel with automatic monitoring of '
+                        'resolver configuration changes, this usually means the system ran '
+                        'out of inotify watches. Falling back to socket state callback. '
+                        'Consider increasing the system inotify watch limit: %s',
                         e,
                     )
                 else:
                     _LOGGER.warning(
-                        "Failed to create a DNS resolver channel with automatic monitoring "
-                        "of resolver configuration changes. Falling back to socket state "
-                        "callback: %s",
+                        'Failed to create a DNS resolver channel with automatic monitoring '
+                        'of resolver configuration changes. Falling back to socket state '
+                        'callback: %s',
                         e,
                     )
-        if sys.platform == "win32" and not isinstance(self.loop, asyncio.SelectorEventLoop):
+        if sys.platform == 'win32' and not isinstance(self.loop, asyncio.SelectorEventLoop):
             try:
                 import winloop
 
@@ -134,7 +134,7 @@ class DNSResolver:
 
     def _get_future_callback(
         self,
-    ) -> Tuple["asyncio.Future[_T]", Callable[[_T, int], None]]:
+    ) -> Tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
         future: asyncio.Future[_T] = self.loop.create_future()
@@ -150,47 +150,47 @@ class DNSResolver:
 
     @overload
     def query(
-        self, host: str, qtype: Literal["A"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['A'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_a_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["AAAA"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['AAAA'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_aaaa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["CAA"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CAA'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_caa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["CNAME"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CNAME'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_cname_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["MX"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['MX'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_mx_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["NAPTR"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NAPTR'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_naptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["NS"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NS'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_ns_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["PTR"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['PTR'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_ptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["SOA"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SOA'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_soa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["SRV"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SRV'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_srv_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal["TXT"], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['TXT'], qclass: Optional[str] = ...
     ) -> asyncio.Future[list[pycares.ares_query_txt_result]]: ...
 
     def query(
@@ -199,12 +199,12 @@ class DNSResolver:
         try:
             qtype = query_type_map[qtype]
         except KeyError as e:
-            raise ValueError(f"invalid query type: {qtype}") from e
+            raise ValueError(f'invalid query type: {qtype}') from e
         if qclass is not None:
             try:
                 qclass = query_class_map[qclass]
             except KeyError as e:
-                raise ValueError(f"invalid query class: {qclass}") from e
+                raise ValueError(f'invalid query class: {qclass}') from e
 
         fut: asyncio.Future[list[Any]]
         fut, cb = self._get_future_callback()
