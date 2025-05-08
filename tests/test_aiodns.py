@@ -233,8 +233,8 @@ def test_win32_no_selector_event_loop() -> None:
     # Create a non-SelectorEventLoop to trigger the error
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
     mock_loop.__class__ = (
-        asyncio.AbstractEventLoop
-    )  # Ensure it's not recognized as SelectorEventLoop
+        asyncio.AbstractEventLoop  # type: ignore[assignment]
+    )
 
     with (
         pytest.raises(
@@ -337,7 +337,7 @@ def test_win32_import_winloop_error() -> None:
     # Setup patching for this test
     original_import = __import__
 
-    def mock_import(name, *args, **kwargs):
+    def mock_import(name: str, *args: object, **kwargs: object) -> object:
         if name == "winloop":
             raise ModuleNotFoundError("No module named 'winloop'")
         return original_import(name, *args, **kwargs)
@@ -371,7 +371,7 @@ def test_win32_winloop_not_loop_instance() -> None:
     mock_winloop_module = unittest.mock.MagicMock()
     mock_winloop_module.Loop = MockLoop
 
-    def mock_import(name, *args, **kwargs):
+    def mock_import(name: str, *args: object, **kwargs: object) -> object:
         if name == "winloop":
             return mock_winloop_module
         return original_import(name, *args, **kwargs)
@@ -400,14 +400,15 @@ def test_win32_winloop_loop_instance() -> None:
 
     # Create a mock event loop that IS a winloop.Loop instance
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
-    mock_loop.__class__ = MockLoop  # Make isinstance check pass
+    # Make isinstance check pass
+    mock_loop.__class__ = MockLoop  # type: ignore[assignment]
 
     mock_winloop_module = unittest.mock.MagicMock()
     mock_winloop_module.Loop = MockLoop
 
     original_import = __import__
 
-    def mock_import(name, *args, **kwargs):
+    def mock_import(name: str, *args: object, **kwargs: object) -> object:
         if name == "winloop":
             return mock_winloop_module
         return original_import(name, *args, **kwargs)
