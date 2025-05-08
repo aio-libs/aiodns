@@ -2,16 +2,19 @@
 
 import asyncio
 import ipaddress
+import logging
 import unittest
 import pytest
 import socket
 import sys
 import time
 import unittest.mock
+from typing import Any
 
 import pycares
 
 import aiodns
+import pycares
 
 try:
     if sys.platform == "win32":
@@ -228,12 +231,201 @@ class TestNoEventThreadDNS(DNSTest):
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
 def test_win32_no_selector_event_loop() -> None:
     """Test DNSResolver with Windows without SelectorEventLoop."""
-    asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+    # Create a non-SelectorEventLoop to trigger the error
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+    mock_loop.__class__ = (
+        asyncio.AbstractEventLoop  # type: ignore[assignment]
+    )
+
     with (
-        pytest.raises(RuntimeError, match="aiodns needs a SelectorEventLoop on Windows"),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False)
+        pytest.raises(
+            RuntimeError, match="aiodns needs a SelectorEventLoop on Windows"
+        ),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("sys.platform", "win32"),
     ):
-        aiodns.DNSResolver(loop=asyncio.new_event_loop(), timeout=5.0)
+        aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
+
+
+@pytest.mark.parametrize(
+    ("platform", "expected_msg_parts", "unexpected_msg_parts"),
+    [
+        (
+            "linux",
+            [
+                "automatic monitoring of",
+                "resolver configuration changes",
+                "system ran out of inotify watches",
+                "Falling back to socket state callback",
+                "Consider increasing the system inotify watch limit",
+            ],
+            [],
+        ),
+        (
+            "darwin",
+            [
+                "automatic monitoring",
+                "resolver configuration changes",
+                "Falling back to socket state callback",
+            ],
+            [
+                "system ran out of inotify watches",
+                "Consider increasing the system inotify watch limit",
+            ],
+        ),
+        (
+            "win32",
+            [
+                "automatic monitoring",
+                "resolver configuration changes",
+                "Falling back to socket state callback",
+            ],
+            [
+                "system ran out of inotify watches",
+                "Consider increasing the system inotify watch limit",
+            ],
+        ),
+    ],
+)
+async def test_make_channel_ares_error(
+    platform: str,
+    expected_msg_parts: list[str],
+    unexpected_msg_parts: list[str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test exception handling in _make_channel on different platforms."""
+    # Set log level to capture warnings
+    caplog.set_level(logging.WARNING)
+
+    # Create a mock loop that is a SelectorEventLoop to avoid Windows-specific errors
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.SelectorEventLoop)
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch("sys.platform", platform),
+        # Configure first Channel call to raise AresError, second call to return our mock
+        unittest.mock.patch(
+            "aiodns.pycares.Channel",
+            side_effect=[
+                pycares.AresError("Mock error"),
+                mock_channel,
+            ],
+        ),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=True),
+        # Also patch asyncio.get_event_loop to return our mock loop
+        unittest.mock.patch("asyncio.get_event_loop", return_value=mock_loop),
+    ):
+        # Create resolver which will call _make_channel
+        resolver = aiodns.DNSResolver(loop=mock_loop)
+
+        # Check that event_thread is False due to exception
+        assert resolver._event_thread is False
+
+        # Check expected message parts in the captured log
+        for part in expected_msg_parts:
+            assert part in caplog.text
+
+        # Check unexpected message parts aren't in the captured log
+        for part in unexpected_msg_parts:
+            assert part not in caplog.text
+
+
+def test_win32_import_winloop_error() -> None:
+    """Test handling of ModuleNotFoundError when importing winloop on Windows."""
+    # Create a mock event loop that is not a SelectorEventLoop
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+
+    # Setup patching for this test
+    original_import = __import__
+
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "winloop":
+            raise ModuleNotFoundError("No module named 'winloop'")
+        return original_import(name, *args, **kwargs)
+
+    # Patch the Channel class to avoid creating real network resources
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        # Also patch Channel creation to avoid socket resource leak
+        unittest.mock.patch("aiodns.pycares.Channel", return_value=mock_channel),
+        pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
+    ):
+        aiodns.DNSResolver(loop=mock_loop)
+
+
+def test_win32_winloop_not_loop_instance() -> None:
+    """Test handling of a loop that is not a winloop.Loop instance on Windows."""
+    # Create a mock event loop that is not a SelectorEventLoop
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+
+    original_import = __import__
+
+    # Create a mock winloop module with a Loop class that's an actual type
+    class MockLoop:
+        pass
+
+    mock_winloop_module = unittest.mock.MagicMock()
+    mock_winloop_module.Loop = MockLoop
+
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "winloop":
+            return mock_winloop_module
+        return original_import(name, *args, **kwargs)
+
+    # Patch the Channel class to avoid creating real network resources
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        # Also patch Channel creation to avoid socket resource leak
+        unittest.mock.patch("aiodns.pycares.Channel", return_value=mock_channel),
+        pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
+    ):
+        aiodns.DNSResolver(loop=mock_loop)
+
+
+def test_win32_winloop_loop_instance() -> None:
+    """Test handling of a loop that IS a winloop.Loop instance on Windows."""
+
+    # Create a mock winloop module with a Loop class
+    class MockLoop:
+        pass
+
+    # Create a mock event loop that IS a winloop.Loop instance
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+    # Make isinstance check pass
+    mock_loop.__class__ = MockLoop  # type: ignore[assignment]
+
+    mock_winloop_module = unittest.mock.MagicMock()
+    mock_winloop_module.Loop = MockLoop
+
+    original_import = __import__
+
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "winloop":
+            return mock_winloop_module
+        return original_import(name, *args, **kwargs)
+
+    # Mock channel creation to avoid actual DNS resolution
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        unittest.mock.patch("aiodns.pycares.Channel", return_value=mock_channel),
+    ):
+        # This should not raise an exception since loop is a winloop.Loop instance
+        aiodns.DNSResolver(loop=mock_loop)
 
 
 if __name__ == "__main__":  # pragma: no cover
