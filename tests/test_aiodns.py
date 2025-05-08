@@ -2,6 +2,7 @@
 
 import asyncio
 import ipaddress
+import logging
 import unittest
 import pytest
 import socket
@@ -10,6 +11,7 @@ import time
 import unittest.mock
 
 import aiodns
+import pycares
 
 try:
     if sys.platform == "win32":
@@ -231,6 +233,79 @@ def test_win32_no_selector_event_loop():
         unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False)
     ):
         aiodns.DNSResolver(loop=asyncio.new_event_loop(), timeout=5.0)
+
+
+@pytest.mark.parametrize(
+    ("platform", "expected_msg_parts", "unexpected_msg_parts"),
+    [
+        (
+            "linux",
+            [
+                "automatic monitoring of",
+                "resolver configuration changes",
+                "system ran out of inotify watches",
+                "Falling back to socket state callback",
+                "Consider increasing the system inotify watch limit"
+            ],
+            []
+        ),
+        (
+            "darwin",
+            [
+                "automatic monitoring",
+                "resolver configuration changes",
+                "Falling back to socket state callback"
+            ],
+            [
+                "system ran out of inotify watches",
+                "Consider increasing the system inotify watch limit"
+            ]
+        ),
+        (
+            "win32",
+            [
+                "automatic monitoring",
+                "resolver configuration changes",
+                "Falling back to socket state callback"
+            ],
+            [
+                "system ran out of inotify watches",
+                "Consider increasing the system inotify watch limit"
+            ]
+        ),
+    ]
+)
+@pytest.mark.asyncio
+async def test_make_channel_ares_error(
+    platform: str,
+    expected_msg_parts: list[str],
+    unexpected_msg_parts: list[str],
+    caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test exception handling in _make_channel on different platforms."""
+    # Set log level to capture warnings
+    caplog.set_level(logging.WARNING)
+    
+    with unittest.mock.patch('sys.platform', platform), \
+         unittest.mock.patch('pycares.Channel') as mock_channel, \
+         unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=True):
+        
+        # Configure first Channel call to raise AresError, second call to return a mock
+        mock_channel.side_effect = [pycares.AresError("Mock error"), unittest.mock.MagicMock()]
+        
+        # Create resolver which will call _make_channel
+        resolver = aiodns.DNSResolver()
+        
+        # Check that event_thread is False due to exception
+        assert resolver._event_thread is False
+        
+        # Check expected message parts in the captured log
+        for part in expected_msg_parts:
+            assert part in caplog.text
+        
+        # Check unexpected message parts aren't in the captured log
+        for part in unexpected_msg_parts:
+            assert part not in caplog.text
 
 
 if __name__ == "__main__":  # pragma: no cover
