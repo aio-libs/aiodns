@@ -275,7 +275,6 @@ def test_win32_no_selector_event_loop():
         ),
     ],
 )
-@pytest.mark.asyncio
 async def test_make_channel_ares_error(
     platform: str,
     expected_msg_parts: list[str],

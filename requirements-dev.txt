@@ -1,3 +1,4 @@
 -r requirements.txt
 
+pytest-asyncio==0.26.0
 mypy==1.15.0
