@@ -288,15 +288,16 @@ async def test_make_channel_ares_error(
 
     with (
         unittest.mock.patch("sys.platform", platform),
-        unittest.mock.patch("pycares.Channel") as mock_channel,
+        # Configure first Channel call to raise AresError, second call to return a mock
+        unittest.mock.patch(
+            "aiodns.pycares.Channel",
+            side_effect=[
+                pycares.AresError("Mock error"),
+                unittest.mock.MagicMock(),
+            ],
+        ),
         unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=True),
     ):
-        # Configure first Channel call to raise AresError, second call to return a mock
-        mock_channel.side_effect = [
-            pycares.AresError("Mock error"),
-            unittest.mock.MagicMock(),
-        ]
-
         # Create resolver which will call _make_channel
         resolver = aiodns.DNSResolver()
 
