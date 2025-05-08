@@ -9,6 +9,7 @@ import socket
 import sys
 import time
 import unittest.mock
+from typing import Any
 
 import pycares
 
@@ -337,7 +338,7 @@ def test_win32_import_winloop_error() -> None:
     # Setup patching for this test
     original_import = __import__
 
-    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name == "winloop":
             raise ModuleNotFoundError("No module named 'winloop'")
         return original_import(name, *args, **kwargs)
@@ -371,7 +372,7 @@ def test_win32_winloop_not_loop_instance() -> None:
     mock_winloop_module = unittest.mock.MagicMock()
     mock_winloop_module.Loop = MockLoop
 
-    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name == "winloop":
             return mock_winloop_module
         return original_import(name, *args, **kwargs)
@@ -408,7 +409,7 @@ def test_win32_winloop_loop_instance() -> None:
 
     original_import = __import__
 
-    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name == "winloop":
             return mock_winloop_module
         return original_import(name, *args, **kwargs)
