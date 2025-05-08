@@ -312,5 +312,54 @@ async def test_make_channel_ares_error(
             assert part not in caplog.text
 
 
+def test_win32_import_winloop_error():
+    """Test handling of ModuleNotFoundError when importing winloop on Windows."""
+    # Create a mock event loop that is not a SelectorEventLoop
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+
+    # Setup patching for this test
+    original_import = __import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "winloop":
+            raise ModuleNotFoundError("No module named 'winloop'")
+        return original_import(name, *args, **kwargs)
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
+    ):
+        aiodns.DNSResolver(loop=mock_loop)
+
+
+def test_win32_winloop_not_loop_instance():
+    """Test handling of a loop that is not a winloop.Loop instance on Windows."""
+    # Create a mock event loop that is not a SelectorEventLoop
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+
+    original_import = __import__
+
+    # Create a mock winloop module with a Loop class
+    mock_winloop_module = unittest.mock.MagicMock()
+    mock_winloop_module.Loop = unittest.mock.MagicMock()
+
+    def mock_import(name, *args, **kwargs):
+        if name == "winloop":
+            return mock_winloop_module
+        return original_import(name, *args, **kwargs)
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
+    ):
+        aiodns.DNSResolver(loop=mock_loop)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main(verbosity=2)
