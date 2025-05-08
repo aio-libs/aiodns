@@ -70,28 +70,34 @@ class DNSResolver:
         self._timer = None  # type: Optional[asyncio.TimerHandle]
 
     def _make_channel(self, **kwargs: Any) -> Tuple[bool, pycares.Channel]:
-        if hasattr(pycares,"ares_threadsafety") and pycares.ares_threadsafety():
+        if hasattr(pycares, "ares_threadsafety") and pycares.ares_threadsafety():
             # pycares is thread safe
             try:
-                return True, pycares.Channel(event_thread=True,
-                                            timeout=self._timeout,
-                                            **kwargs)
+                return True, pycares.Channel(
+                    event_thread=True, timeout=self._timeout, **kwargs
+                )
             except pycares.AresError as e:
-                if sys.platform == 'linux':
-                    _LOGGER.debug("Failed to create a DNS resolver channel, this usually means "
-                                  "that the system ran out of inotify watches: %s", e)
+                if sys.platform == "linux":
+                    _LOGGER.debug(
+                        "Failed to create a DNS resolver channel, this usually means "
+                        "that the system ran out of inotify watches: %s",
+                        e,
+                    )
                 else:
                     _LOGGER.debug("Failed to create a DNS resolver channel: %s", e)
-        if sys.platform == 'win32' and not isinstance(self.loop, asyncio.SelectorEventLoop):
+        if sys.platform == "win32" and not isinstance(
+            self.loop, asyncio.SelectorEventLoop
+        ):
             try:
                 import winloop
-                if not isinstance(self.loop , winloop.Loop):
+
+                if not isinstance(self.loop, winloop.Loop):
                     raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
             except ModuleNotFoundError as ex:
                 raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
-        return False, pycares.Channel(sock_state_cb=self._sock_state_cb,
-                timeout=self._timeout,
-                **kwargs)
+        return False, pycares.Channel(
+            sock_state_cb=self._sock_state_cb, timeout=self._timeout, **kwargs
+        )
 
     @property
     def nameservers(self) -> Sequence[str]:
