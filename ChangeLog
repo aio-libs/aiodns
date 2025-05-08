@@ -1,3 +1,68 @@
+3.4.0
+=====
+- Added fallback to `sock_state_cb` if `event_thread` creation fails (#151)
+  - Improved reliability on systems with exhausted inotify watches
+  - Implemented transparent fallback mechanism to ensure DNS resolution continues to work
+- Implemented strict typing (#138)
+  - Added comprehensive type annotations
+  - Improved mypy configuration
+  - Added py.typed marker file
+- Updated dependencies
+  - Bumped pycares from 4.7.0 to 4.8.0 (#149)
+- Added support for Python 3.13 (#153)
+  - Updated CI configuration to test with Python 3.13
+
+3.3.0
+=====
+- Used c-ares event thread when available (#145)
+  - Significantly improved performance by using the c-ares event thread
+- Dropped Python 3.8 support (#129)
+- Updated CI infrastructure
+  - Fixed release workflow for breaking changes in upload/download artifact (#148)
+  - Added tests on push (#139)
+  - Fixed test coverage (#140)
+  - Updated CI configuration (#130)
+  - Bumped actions/upload-artifact from 2 to 4 (#133)
+  - Bumped actions/download-artifact from 4.1.7 to 4.2.1 (#131)
+  - Bumped actions/download-artifact from 4.2.1 to 4.3.0 (#144)
+  - Bumped actions/setup-python from 2 to 5 (#134)
+  - Bumped actions/checkout from 2 to 4 (#132)
+  - Bumped dependabot/fetch-metadata from 2.2.0 to 2.3.0 (#135)
+- Updated dependencies
+  - Bumped pycares from 4.4.0 to 4.6.0 (#137)
+  - Bumped pycares from 4.5.0 to 4.6.1 (#143)
+  - Bumped pycares from 4.6.1 to 4.7.0 (#146)
+  - Bumped pytest-cov from 5.0.0 to 6.1.0 (#136)
+  - Bumped pytest-cov from 6.1.0 to 6.1.1 (#142)
+
+3.2.0
+=====
+- Added support for getnameinfo
+- Added support for getaddrinfo (#118)
+- Added Winloop as a valid EventLoop (#116)
+- Fixed missing py.typed file for wheel
+- Updated test_query_ptr test to use address with PTR record
+
+3.1.1
+=====
+- Fixed timeout implementation
+- Added tests to verify timeouts work correctly
+- Added PEP-561 with py.typed
+
+3.1.0
+=====
+- Added exception raising if the loop is the wrong type on Windows
+- Fixed type annotations
+- Fixed return type for resolver nameservers
+- Updated supported Python versions
+  - Added support for Python 3.10
+  - Added testing for PyPy 3.9 and 3.10
+- Improved CI
+  - Skipped some Python versions on macOS tests
+  - Skipped test_gethostbyaddr on Windows
+  - Used WindowsSelectorEventLoopPolicy to run Windows tests
+  - Used latest CI runner versions
+
 3.0.0
 =====
 - Release wheels and source to PyPI with GH actions
