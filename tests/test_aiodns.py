@@ -362,5 +362,40 @@ def test_win32_winloop_not_loop_instance():
         aiodns.DNSResolver(loop=mock_loop)
 
 
+def test_win32_winloop_loop_instance():
+    """Test handling of a loop that IS a winloop.Loop instance on Windows."""
+
+    # Create a mock winloop module with a Loop class
+    class MockLoop:
+        pass
+
+    # Create a mock event loop that IS a winloop.Loop instance
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
+    mock_loop.__class__ = MockLoop  # Make isinstance check pass
+
+    mock_winloop_module = unittest.mock.MagicMock()
+    mock_winloop_module.Loop = MockLoop
+
+    original_import = __import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "winloop":
+            return mock_winloop_module
+        return original_import(name, *args, **kwargs)
+
+    # Mock channel creation to avoid actual DNS resolution
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch("sys.platform", "win32"),
+        unittest.mock.patch("aiodns.pycares.ares_threadsafety", return_value=False),
+        unittest.mock.patch("builtins.__import__", side_effect=mock_import),
+        unittest.mock.patch("importlib.import_module", side_effect=mock_import),
+        unittest.mock.patch("aiodns.pycares.Channel", return_value=mock_channel),
+    ):
+        # This should not raise an exception since loop is a winloop.Loop instance
+        aiodns.DNSResolver(loop=mock_loop)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main(verbosity=2)
