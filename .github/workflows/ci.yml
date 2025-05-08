@@ -30,7 +30,7 @@ jobs:
       run: |
         pip install .
     - name: Run mypy
-      run: python mypy_run.py
+      run: mypy
     - name: Prepare twine checker
       run: |
         pip install -U build twine wheel
