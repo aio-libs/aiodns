@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         name: Install Python
         with:
-          python-version: "3.13"
+          python-version: '3.13'
       - run: pip install setuptools wheel
       - name: Build wheels
         run: python setup.py bdist_wheel
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         name: Install Python
         with:
-          python-version: "3.13"
+          python-version: '3.13'
       - run: pip install setuptools
       - name: Build sdist
         run: python setup.py sdist
@@ -45,8 +45,8 @@ jobs:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
     permissions:
-      contents: write # IMPORTANT: mandatory for making GitHub Releases
-      id-token: write # IMPORTANT: mandatory for trusted publishing & sigstore
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for trusted publishing & sigstore
 
     environment:
       name: pypi
@@ -59,6 +59,6 @@ jobs:
           pattern: artifact-*
           path: dist
           merge-multiple: true
-
+          
       - uses: pypa/gh-action-pypi-publish@release/v1
         name: Publish package distributions to PyPI
