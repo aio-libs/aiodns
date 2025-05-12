@@ -4,11 +4,6 @@ exclude: "ChangeLog"
 default_stages: [pre-commit]
 
 repos:
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.6.0
-    hooks:
-      - id: commitizen
-        stages: [commit-msg]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -23,11 +18,6 @@ repos:
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        args: ["--tab-width", "2"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.6
     hooks:
