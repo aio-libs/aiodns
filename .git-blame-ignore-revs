@@ -1,0 +1,4 @@
+# Reformatting commits that should be ignored by `git blame`
+
+# Ruff reformat
+924b981471b676e90a1f38b1e20223c18b899a0b

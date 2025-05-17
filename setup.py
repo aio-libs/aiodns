@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 import codecs
 import re
-import sys
 
 from setuptools import setup
 

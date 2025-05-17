@@ -1,17 +1,23 @@
 import asyncio
 import functools
 import logging
-import pycares
 import socket
 import sys
 from collections.abc import Iterable, Sequence
-from typing import Any, Literal, Optional, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import pycares
-from typing import Any, Callable, Optional, Set, Sequence, Tuple, Union
 
 from . import error
-
 
 __version__ = '3.4.0'
 
@@ -61,7 +67,8 @@ class DNSResolver:
         **kwargs: Any,
     ) -> None:  # TODO(PY311): Use Unpack for kwargs.
         self.loop = loop or asyncio.get_event_loop()
-        assert self.loop is not None
+        if TYPE_CHECKING:
+            assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
@@ -72,7 +79,7 @@ class DNSResolver:
         self._write_fds: set[int] = set()
         self._timer: Optional[asyncio.TimerHandle] = None
 
-    def _make_channel(self, **kwargs: Any) -> Tuple[bool, pycares.Channel]:
+    def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         if (
             hasattr(pycares, 'ares_threadsafety')
             and pycares.ares_threadsafety()
@@ -85,17 +92,18 @@ class DNSResolver:
             except pycares.AresError as e:
                 if sys.platform == 'linux':
                     _LOGGER.warning(
-                        'Failed to create a DNS resolver channel with automatic monitoring of '
-                        'resolver configuration changes, this usually means the system ran '
-                        'out of inotify watches. Falling back to socket state callback. '
-                        'Consider increasing the system inotify watch limit: %s',
+                        'Failed to create DNS resolver channel with automatic '
+                        'monitoring of resolver configuration changes. This '
+                        'usually means the system ran out of inotify watches. '
+                        'Falling back to socket state callback. Consider '
+                        'increasing the system inotify watch limit: %s',
                         e,
                     )
                 else:
                     _LOGGER.warning(
-                        'Failed to create a DNS resolver channel with automatic monitoring '
-                        'of resolver configuration changes. Falling back to socket state '
-                        'callback: %s',
+                        'Failed to create DNS resolver channel with automatic '
+                        'monitoring of resolver configuration changes. '
+                        'Falling back to socket state callback: %s',
                         e,
                     )
         if sys.platform == 'win32' and not isinstance(
@@ -137,10 +145,10 @@ class DNSResolver:
 
     def _get_future_callback(
         self,
-    ) -> Tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
+    ) -> tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
-        future: 'asyncio.Future[_T]' = self.loop.create_future()
+        future: asyncio.Future[_T] = self.loop.create_future()
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
@@ -201,13 +209,13 @@ class DNSResolver:
     ) -> asyncio.Future[list[Any]]:
         try:
             qtype = query_type_map[qtype]
-        except KeyError:
-            raise ValueError('invalid query type: {}'.format(qtype))
+        except KeyError as e:
+            raise ValueError(f'invalid query type: {qtype}') from e
         if qclass is not None:
             try:
                 qclass = query_class_map[qclass]
-            except KeyError:
-                raise ValueError('invalid query class: {}'.format(qclass))
+            except KeyError as e:
+                raise ValueError(f'invalid query class: {qclass}') from e
 
         fut: asyncio.Future[list[Any]]
         fut, cb = self._get_future_callback()
