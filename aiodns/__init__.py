@@ -94,17 +94,17 @@ class DNSResolver:
                 if sys.platform == 'linux':
                     _LOGGER.warning(
                         'Failed to create DNS resolver channel with automatic '
-                        'monitoring of resolver configuration changes. This usually '
-                        'means the system ran out of inotify watches. Falling '
-                        'back to socket state callback. Consider increasing '
-                        'the system inotify watch limit: %s',
+                        'monitoring of resolver configuration changes. This '
+                        'usually means the system ran out of inotify watches. '
+                        'Falling back to socket state callback. Consider '
+                        'increasing the system inotify watch limit: %s',
                         e,
                     )
                 else:
                     _LOGGER.warning(
                         'Failed to create DNS resolver channel with automatic '
-                        'monitoring of resolver configuration changes. Falling back '
-                        'to socket state callback: %s',
+                        'monitoring of resolver configuration changes. Falling '
+                        'back to socket state callback: %s',
                         e,
                     )
         if sys.platform == 'win32' and not isinstance(
