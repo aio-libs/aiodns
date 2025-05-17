@@ -137,7 +137,8 @@ class DNSTest(unittest.TestCase):
             self.loop.run_until_complete(f)
         except aiodns.error.DNSError as e:
             self.assertEqual(e.args[0], aiodns.error.ARES_ETIMEOUT)
-        # Ensure timeout really cuts time deadline. Limit duration to one second
+        # Ensure timeout really cuts time deadline.
+        # Limit duration to one second
         self.assertLess(time.monotonic() - started, 1)
 
     def test_query_cancel(self) -> None:
@@ -163,7 +164,7 @@ class DNSTest(unittest.TestCase):
 
     def test_query_twice(self) -> None:
         async def coro(self: DNSTest) -> None:
-            for i in range(2):
+            for _ in range(2):
                 result = await self.resolver.query('gmail.com', 'MX')
                 self.assertTrue(result)
 
@@ -322,13 +323,15 @@ async def test_make_channel_ares_error(
     # Set log level to capture warnings
     caplog.set_level(logging.WARNING)
 
-    # Create a mock loop that is a SelectorEventLoop to avoid Windows-specific errors
+    # Create a mock loop that is a SelectorEventLoop to
+    # avoid Windows-specific errors
     mock_loop = unittest.mock.MagicMock(spec=asyncio.SelectorEventLoop)
     mock_channel = unittest.mock.MagicMock()
 
     with (
         unittest.mock.patch('sys.platform', platform),
-        # Configure first Channel call to raise AresError, second call to return our mock
+        # Configure first Channel call to raise AresError,
+        # second call to return our mock
         unittest.mock.patch(
             'aiodns.pycares.Channel',
             side_effect=[
@@ -358,7 +361,11 @@ async def test_make_channel_ares_error(
 
 
 def test_win32_import_winloop_error() -> None:
-    """Test handling of ModuleNotFoundError when importing winloop on Windows."""
+    """Test winloop import error on Windows.
+    
+    Test handling of ModuleNotFoundError when importing
+    winloop on Windows.
+    """
     # Create a mock event loop that is not a SelectorEventLoop
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
 
@@ -392,7 +399,11 @@ def test_win32_import_winloop_error() -> None:
 
 
 def test_win32_winloop_not_loop_instance() -> None:
-    """Test handling of a loop that is not a winloop.Loop instance on Windows."""
+    """Test non-winloop.Loop instance on Windows.
+    
+    Test handling of a loop that is not a winloop.Loop
+    instance on Windows.
+    """
     # Create a mock event loop that is not a SelectorEventLoop
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
 
@@ -432,7 +443,10 @@ def test_win32_winloop_not_loop_instance() -> None:
 
 
 def test_win32_winloop_loop_instance() -> None:
-    """Test handling of a loop that IS a winloop.Loop instance on Windows."""
+    """Test winloop.Loop instance on Windows.
+    
+    Test handling of a loop that IS a winloop.Loop instance on Windows.
+    """
 
     # Create a mock winloop module with a Loop class
     class MockLoop:
@@ -469,7 +483,8 @@ def test_win32_winloop_loop_instance() -> None:
             'aiodns.pycares.Channel', return_value=mock_channel
         ),
     ):
-        # This should not raise an exception since loop is a winloop.Loop instance
+        # This should not raise an exception since loop
+        # is a winloop.Loop instance
         aiodns.DNSResolver(loop=mock_loop)
 
 

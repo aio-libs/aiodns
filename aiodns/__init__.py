@@ -4,10 +4,17 @@ import logging
 import socket
 import sys
 from collections.abc import Iterable, Sequence
-from typing import Any, Literal, Optional, TypeVar, Union, overload
-
-import pycares
-from typing import Any, Callable, Optional, Set, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import pycares
 
@@ -80,21 +87,24 @@ class DNSResolver:
         ):
             # pycares is thread safe
             try:
-                return True, pycares.Channel(event_thread=True, timeout=self._timeout, **kwargs)
+                return True, pycares.Channel(
+                    event_thread=True, timeout=self._timeout, **kwargs
+                )
             except pycares.AresError as e:
                 if sys.platform == 'linux':
                     _LOGGER.warning(
-                        'Failed to create a DNS resolver channel with automatic monitoring of '
-                        'resolver configuration changes, this usually means the system ran '
-                        'out of inotify watches. Falling back to socket state callback. '
-                        'Consider increasing the system inotify watch limit: %s',
+                        'Failed to create DNS resolver channel with automatic '
+                        'monitoring of resolver config changes. This usually '
+                        'means the system ran out of inotify watches. Falling '
+                        'back to socket state callback. Consider increasing '
+                        'the system inotify watch limit: %s',
                         e,
                     )
                 else:
                     _LOGGER.warning(
-                        'Failed to create a DNS resolver channel with automatic monitoring '
-                        'of resolver configuration changes. Falling back to socket state '
-                        'callback: %s',
+                        'Failed to create DNS resolver channel with automatic '
+                        'monitoring of resolver config changes. Falling back '
+                        'to socket state callback: %s',
                         e,
                     )
         if sys.platform == 'win32' and not isinstance(
@@ -139,7 +149,7 @@ class DNSResolver:
     ) -> Tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
-        future: 'asyncio.Future[_T]' = self.loop.create_future()
+        future: asyncio.Future[_T] = self.loop.create_future()
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
