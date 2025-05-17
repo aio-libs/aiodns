@@ -1,8 +1,7 @@
-[tool.ruff]
 target-version = "py38"
 line-length = 79
 
-[tool.ruff.lint]
+[lint]
 ignore = [
     "D203", # 1 blank line required before class docstring
     "D212", # Multi-line docstring summary should start at the first line
@@ -28,7 +27,7 @@ select = [
 ]
 
 
-[tool.ruff.lint.per-file-ignores]
+[lint.per-file-ignores]
 "tests/**/*" = [
     "D100",
     "D101",
@@ -41,8 +40,8 @@ select = [
 "conftest.py" = ["D100"]
 "docs/conf.py" = ["D100"]
 
-[tool.ruff.lint.isort]
+[lint.isort]
 known-first-party = ["aiodns", "tests"]
 
-[tool.ruff.format]
+[format]
 quote-style = "single"
