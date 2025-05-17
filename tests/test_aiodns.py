@@ -31,7 +31,9 @@ except ModuleNotFoundError:
 class DNSTest(unittest.TestCase):
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            asyncio.set_event_loop_policy(
+                asyncio.WindowsSelectorEventLoopPolicy()
+            )
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
@@ -78,7 +80,9 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
-    @unittest.skipIf(sys.platform == 'darwin', 'skipped on Darwin as it is flakey on CI')
+    @unittest.skipIf(
+        sys.platform == 'darwin', 'skipped on Darwin as it is flakey on CI'
+    )
     def test_query_txt(self) -> None:
         f = self.resolver.query('google.com', 'TXT')
         result = self.loop.run_until_complete(f)
@@ -101,7 +105,9 @@ class DNSTest(unittest.TestCase):
 
     def test_query_ptr(self) -> None:
         ip = '172.253.122.26'
-        f = self.resolver.query(ipaddress.ip_address(ip).reverse_pointer, 'PTR')
+        f = self.resolver.query(
+            ipaddress.ip_address(ip).reverse_pointer, 'PTR'
+        )
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
 
@@ -116,10 +122,14 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_query_bad_class(self) -> None:
-        self.assertRaises(ValueError, self.resolver.query, 'google.com', 'A', 'INVALIDCLASS')
+        self.assertRaises(
+            ValueError, self.resolver.query, 'google.com', 'A', 'INVALIDCLASS'
+        )
 
     def test_query_timeout(self) -> None:
-        self.resolver = aiodns.DNSResolver(timeout=0.1, tries=1, loop=self.loop)
+        self.resolver = aiodns.DNSResolver(
+            timeout=0.1, tries=1, loop=self.loop
+        )
         self.resolver.nameservers = ['1.2.3.4']
         f = self.resolver.query('google.com', 'A')
         started = time.monotonic()
@@ -153,7 +163,7 @@ class DNSTest(unittest.TestCase):
 
     def test_query_twice(self) -> None:
         async def coro(self: DNSTest) -> None:
-            for _i in range(2):
+            for i in range(2):
                 result = await self.resolver.query('gmail.com', 'MX')
                 self.assertTrue(result)
 
@@ -174,13 +184,17 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.getaddrinfo('google.com', socket.AF_INET)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertTrue(all(node.family == socket.AF_INET for node in result.nodes))
+        self.assertTrue(
+            all(node.family == socket.AF_INET for node in result.nodes)
+        )
 
     def test_getaddrinfo_address_family_af_inet6(self) -> None:
         f = self.resolver.getaddrinfo('google.com', socket.AF_INET6)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertTrue(all(node.family == socket.AF_INET6 for node in result.nodes))
+        self.assertTrue(
+            all(node.family == socket.AF_INET6 for node in result.nodes)
+        )
 
     def test_getnameinfo_ipv4(self) -> None:
         f = self.resolver.getnameinfo(('127.0.0.1', 0))
@@ -231,7 +245,9 @@ class TestNoEventThreadDNS(DNSTest):
     """Test DNSResolver with no event thread."""
 
     def setUp(self) -> None:
-        with unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False):
+        with unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=False
+        ):
             super().setUp()
 
 
@@ -245,8 +261,12 @@ def test_win32_no_selector_event_loop() -> None:
     )
 
     with (
-        pytest.raises(RuntimeError, match='aiodns needs a SelectorEventLoop on Windows'),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False),
+        pytest.raises(
+            RuntimeError, match='aiodns needs a SelectorEventLoop on Windows'
+        ),
+        unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=False
+        ),
         unittest.mock.patch('sys.platform', 'win32'),
     ):
         aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
@@ -316,7 +336,9 @@ async def test_make_channel_ares_error(
                 mock_channel,
             ],
         ),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=True),
+        unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=True
+        ),
         # Also patch asyncio.get_event_loop to return our mock loop
         unittest.mock.patch('asyncio.get_event_loop', return_value=mock_loop),
     ):
@@ -353,11 +375,17 @@ def test_win32_import_winloop_error() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False),
+        unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=False
+        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
-        unittest.mock.patch('importlib.import_module', side_effect=mock_import),
+        unittest.mock.patch(
+            'importlib.import_module', side_effect=mock_import
+        ),
         # Also patch Channel creation to avoid socket resource leak
-        unittest.mock.patch('aiodns.pycares.Channel', return_value=mock_channel),
+        unittest.mock.patch(
+            'aiodns.pycares.Channel', return_value=mock_channel
+        ),
         pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
     ):
         aiodns.DNSResolver(loop=mock_loop)
@@ -387,11 +415,17 @@ def test_win32_winloop_not_loop_instance() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False),
+        unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=False
+        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
-        unittest.mock.patch('importlib.import_module', side_effect=mock_import),
+        unittest.mock.patch(
+            'importlib.import_module', side_effect=mock_import
+        ),
         # Also patch Channel creation to avoid socket resource leak
-        unittest.mock.patch('aiodns.pycares.Channel', return_value=mock_channel),
+        unittest.mock.patch(
+            'aiodns.pycares.Channel', return_value=mock_channel
+        ),
         pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
     ):
         aiodns.DNSResolver(loop=mock_loop)
@@ -424,10 +458,16 @@ def test_win32_winloop_loop_instance() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch('aiodns.pycares.ares_threadsafety', return_value=False),
+        unittest.mock.patch(
+            'aiodns.pycares.ares_threadsafety', return_value=False
+        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
-        unittest.mock.patch('importlib.import_module', side_effect=mock_import),
-        unittest.mock.patch('aiodns.pycares.Channel', return_value=mock_channel),
+        unittest.mock.patch(
+            'importlib.import_module', side_effect=mock_import
+        ),
+        unittest.mock.patch(
+            'aiodns.pycares.Channel', return_value=mock_channel
+        ),
     ):
         # This should not raise an exception since loop is a winloop.Loop instance
         aiodns.DNSResolver(loop=mock_loop)

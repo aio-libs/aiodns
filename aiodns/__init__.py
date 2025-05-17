@@ -4,17 +4,10 @@ import logging
 import socket
 import sys
 from collections.abc import Iterable, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Literal, Optional, TypeVar, Union, overload
+
+import pycares
+from typing import Any, Callable, Optional, Set, Sequence, Tuple, Union
 
 import pycares
 
@@ -81,7 +74,10 @@ class DNSResolver:
         self._timer: Optional[asyncio.TimerHandle] = None
 
     def _make_channel(self, **kwargs: Any) -> Tuple[bool, pycares.Channel]:
-        if hasattr(pycares, 'ares_threadsafety') and pycares.ares_threadsafety():
+        if (
+            hasattr(pycares, 'ares_threadsafety')
+            and pycares.ares_threadsafety()
+        ):
             # pycares is thread safe
             try:
                 return True, pycares.Channel(event_thread=True, timeout=self._timeout, **kwargs)
@@ -101,7 +97,9 @@ class DNSResolver:
                         'callback: %s',
                         e,
                     )
-        if sys.platform == 'win32' and not isinstance(self.loop, asyncio.SelectorEventLoop):
+        if sys.platform == 'win32' and not isinstance(
+            self.loop, asyncio.SelectorEventLoop
+        ):
             try:
                 import winloop
 
@@ -124,11 +122,15 @@ class DNSResolver:
         self._channel.servers = value  # type: ignore[assignment]
 
     @staticmethod
-    def _callback(fut: asyncio.Future[_T], result: _T, errorno: Optional[int]) -> None:
+    def _callback(
+        fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
+    ) -> None:
         if fut.cancelled():
             return
         if errorno is not None:
-            fut.set_exception(error.DNSError(errorno, pycares.errno.strerror(errorno)))
+            fut.set_exception(
+                error.DNSError(errorno, pycares.errno.strerror(errorno))
+            )
         else:
             fut.set_result(result)
 
@@ -137,7 +139,7 @@ class DNSResolver:
     ) -> Tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
-        future: asyncio.Future[_T] = self.loop.create_future()
+        future: 'asyncio.Future[_T]' = self.loop.create_future()
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
@@ -245,7 +247,9 @@ class DNSResolver:
         self._channel.getnameinfo(sockaddr, flags, cb)
         return fut
 
-    def gethostbyaddr(self, name: str) -> asyncio.Future[pycares.ares_host_result]:
+    def gethostbyaddr(
+        self, name: str
+    ) -> asyncio.Future[pycares.ares_host_result]:
         fut: asyncio.Future[pycares.ares_host_result]
         fut, cb = self._get_future_callback()
         self._channel.gethostbyaddr(name, cb)
@@ -274,7 +278,11 @@ class DNSResolver:
                 self._write_fds.discard(fd)
                 self.loop.remove_writer(fd)
 
-            if not self._read_fds and not self._write_fds and self._timer is not None:
+            if (
+                not self._read_fds
+                and not self._write_fds
+                and self._timer is not None
+            ):
                 self._timer.cancel()
                 self._timer = None
 
@@ -289,7 +297,9 @@ class DNSResolver:
 
     def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
-            self._channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
+            self._channel.process_fd(
+                pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD
+            )
             self._start_timer()
         else:
             self._timer = None
