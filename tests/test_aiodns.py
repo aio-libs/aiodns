@@ -362,7 +362,7 @@ async def test_make_channel_ares_error(
 
 def test_win32_import_winloop_error() -> None:
     """Test winloop import error on Windows.
-    
+
     Test handling of ModuleNotFoundError when importing
     winloop on Windows.
     """
@@ -400,7 +400,7 @@ def test_win32_import_winloop_error() -> None:
 
 def test_win32_winloop_not_loop_instance() -> None:
     """Test non-winloop.Loop instance on Windows.
-    
+
     Test handling of a loop that is not a winloop.Loop
     instance on Windows.
     """
@@ -444,7 +444,7 @@ def test_win32_winloop_not_loop_instance() -> None:
 
 def test_win32_winloop_loop_instance() -> None:
     """Test winloop.Loop instance on Windows.
-    
+
     Test handling of a loop that IS a winloop.Loop instance on Windows.
     """
 
