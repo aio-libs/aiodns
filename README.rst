@@ -40,7 +40,7 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
 * ``query(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
   instance of ``asyncio.Future``. The actual result of the DNS query is taken directly from pycares.
   As of version 1.0.0 of aiodns (and pycares, for that matter) results are always namedtuple-like
-  objects with different attributes. Please check the `documentation 
+  objects with different attributes. Please check the `documentation
   <http://pycares.readthedocs.org/en/latest/channel.html#pycares.Channel.query>`_
   for the result fields.
 * ``gethostbyname(host, socket_family)``: Do a DNS resolution for the given
