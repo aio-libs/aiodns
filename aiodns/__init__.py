@@ -10,7 +10,6 @@ from typing import (
     Callable,
     Literal,
     Optional,
-    Tuple,
     TypeVar,
     Union,
     overload,
@@ -80,7 +79,7 @@ class DNSResolver:
         self._write_fds: set[int] = set()
         self._timer: Optional[asyncio.TimerHandle] = None
 
-    def _make_channel(self, **kwargs: Any) -> Tuple[bool, pycares.Channel]:
+    def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         if (
             hasattr(pycares, 'ares_threadsafety')
             and pycares.ares_threadsafety()
@@ -146,7 +145,7 @@ class DNSResolver:
 
     def _get_future_callback(
         self,
-    ) -> Tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
+    ) -> tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
         future: asyncio.Future[_T] = self.loop.create_future()
