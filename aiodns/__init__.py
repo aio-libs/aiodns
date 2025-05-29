@@ -126,9 +126,7 @@ class DNSResolver:
 
     @nameservers.setter
     def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
-        # Remove type ignore after mypy 1.16.0
-        # https://github.com/python/mypy/issues/12892
-        self._channel.servers = value  # type: ignore[assignment]
+        self._channel.servers = value
 
     @staticmethod
     def _callback(
