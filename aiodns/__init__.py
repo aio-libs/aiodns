@@ -4,6 +4,7 @@ import logging
 import socket
 import sys
 from collections.abc import Iterable, Sequence
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -66,6 +67,7 @@ class DNSResolver:
         loop: Optional[asyncio.AbstractEventLoop] = None,
         **kwargs: Any,
     ) -> None:  # TODO(PY311): Use Unpack for kwargs.
+        self._closed = True
         self.loop = loop or asyncio.get_event_loop()
         if TYPE_CHECKING:
             assert self.loop is not None
@@ -78,6 +80,7 @@ class DNSResolver:
         self._read_fds: set[int] = set()
         self._write_fds: set[int] = set()
         self._timer: Optional[asyncio.TimerHandle] = None
+        self._closed = False
 
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         if (
@@ -319,3 +322,55 @@ class DNSResolver:
             timeout = 0.1
 
         self._timer = self.loop.call_later(timeout, self._timer_cb)
+
+    def _cleanup(self) -> None:
+        """Cleanup timers and file descriptors when closing resolver."""
+        if self._closed:
+            return
+        # Mark as closed first to prevent double cleanup
+        self._closed = True
+        # Cancel timer if running
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+
+        # Remove all file descriptors
+        for fd in list(self._read_fds):
+            self.loop.remove_reader(fd)
+        for fd in list(self._write_fds):
+            self.loop.remove_writer(fd)
+
+        self._read_fds.clear()
+        self._write_fds.clear()
+        self._channel.close()
+
+    async def close(self) -> None:
+        """
+        Cleanly close the DNS resolver.
+
+        This should be called to ensure all resources are properly released.
+        After calling close(), the resolver should not be used again.
+        """
+        self._cleanup()
+
+    async def __aenter__(self) -> 'DNSResolver':
+        """Enter the async context manager."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Exit the async context manager."""
+        await self.close()
+
+    def __del__(self) -> None:
+        """Handle cleanup when the resolver is garbage collected."""
+        # Check if we have a channel to clean up
+        # This can happen if an exception occurs during __init__ before
+        # _channel is created (e.g., RuntimeError on Windows
+        # without proper loop)
+        if hasattr(self, '_channel'):
+            self._cleanup()

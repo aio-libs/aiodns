@@ -35,7 +35,7 @@ The following query types are supported: A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS
 API
 ===
 
-The API is pretty simple, three functions are provided in the ``DNSResolver`` class:
+The API is pretty simple, the following functions are provided in the ``DNSResolver`` class:
 
 * ``query(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
   instance of ``asyncio.Future``. The actual result of the DNS query is taken directly from pycares.
@@ -53,6 +53,27 @@ The API is pretty simple, three functions are provided in the ``DNSResolver`` cl
 * ``gethostbyaddr(name)``: Make a reverse lookup for an address.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
   ``ARES_ECANCELLED`` errno.
+* ``close()``: Close the resolver. This releases all resources and cancels any pending queries. It must be called
+  when the resolver is no longer needed (e.g., application shutdown). The resolver should only be closed from the
+  event loop that created the resolver.
+
+
+Async Context Manager Support
+=============================
+
+While not recommended for typical use cases, ``DNSResolver`` can be used as an async context manager
+for scenarios where automatic cleanup is desired:
+
+.. code:: python
+
+    async with aiodns.DNSResolver() as resolver:
+        result = await resolver.query('example.com', 'A')
+        # resolver.close() is called automatically when exiting the context
+
+**Important**: This pattern is discouraged for most applications because ``DNSResolver`` instances
+are designed to be long-lived and reused for many queries. Creating and destroying resolvers
+frequently adds unnecessary overhead. Use the context manager pattern only when you specifically
+need automatic cleanup for short-lived resolver instances, such as in tests or one-off scripts.
 
 
 Note for Windows users
