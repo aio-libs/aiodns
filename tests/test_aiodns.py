@@ -9,7 +9,6 @@ import sys
 import time
 import unittest
 import unittest.mock
-import warnings
 from typing import Any
 
 import pycares
@@ -638,23 +637,26 @@ def test_del_with_stopped_event_loop() -> None:
     # Create resolver with this loop
     resolver = aiodns.DNSResolver(loop=loop)
 
+    # Track if cleanup was called
+    cleanup_called = False
+    original_cleanup = resolver._cleanup
+
+    def mock_cleanup():
+        nonlocal cleanup_called
+        cleanup_called = True
+        original_cleanup()
+
+    resolver._cleanup = mock_cleanup
+
     # Close the loop so it's not running
     loop.close()
 
-    # Capture warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter('always', ResourceWarning)
+    # Delete resolver when its loop is not running
+    del resolver
+    gc.collect()
 
-        # Delete resolver when its loop is not running
-        del resolver
-        gc.collect()
-
-        # Should have a ResourceWarning
-        assert len(w) == 1
-        assert 'DNSResolver was garbage collected without being closed' in str(
-            w[0].message
-        )
-        assert w[0].category is ResourceWarning
+    # Should have called cleanup
+    assert cleanup_called
 
 
 @pytest.mark.asyncio
