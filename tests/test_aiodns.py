@@ -641,12 +641,12 @@ def test_del_with_stopped_event_loop() -> None:
     cleanup_called = False
     original_close = resolver._channel.close
 
-    def mock_close():
+    def mock_close() -> None:
         nonlocal cleanup_called
         cleanup_called = True
         original_close()
 
-    resolver._channel.close = mock_close
+    resolver._channel.close = mock_close  # type: ignore[method-assign]
 
     # Close the loop so it's not running
     loop.close()
