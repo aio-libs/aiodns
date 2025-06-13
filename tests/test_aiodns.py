@@ -789,7 +789,7 @@ async def test_context_manager_close_idempotent() -> None:
         resolver.close = mock_close
 
         # Manually close resolver within context
-        await resolver.close()
+        await resolver.close()  # type: ignore[no-untyped-call]
         assert close_count == 1
 
     # Context manager should call close again, but it should be idempotent
