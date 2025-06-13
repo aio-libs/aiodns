@@ -435,6 +435,7 @@ async def test_make_channel_ares_error(
         for part in unexpected_msg_parts:
             assert part not in caplog.text
 
+        # Manually set _closed to True to prevent cleanup logic from running during the test.
         resolver._closed = True
 
 
