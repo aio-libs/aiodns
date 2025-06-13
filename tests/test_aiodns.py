@@ -710,7 +710,7 @@ async def test_cleanup_method() -> None:
     assert resolver._timer is None
 
     # Verify file descriptors were removed
-    resolver.loop.remove_reader.assert_any_call(1)
+    resolver.loop.remove_reader.assert_any_call(1)  # type: ignore[unreachable]
     resolver.loop.remove_reader.assert_any_call(2)
     resolver.loop.remove_writer.assert_any_call(3)
     resolver.loop.remove_writer.assert_any_call(4)
