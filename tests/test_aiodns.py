@@ -41,8 +41,7 @@ class DNSTest(unittest.TestCase):
         self.resolver.nameservers = ['8.8.8.8']
 
     def tearDown(self) -> None:
-        if self.resolver is not None:
-            self.loop.run_until_complete(self.resolver.close())
+        self.loop.run_until_complete(self.resolver.close())
         self.resolver = None  # type: ignore[assignment]
 
     def test_query_a(self) -> None:
@@ -248,8 +247,7 @@ class TestQueryTimeout(unittest.TestCase):
         self.resolver.nameservers = ['1.2.3.4']
 
     def tearDown(self) -> None:
-        if self.resolver is not None:
-            self.loop.run_until_complete(self.resolver.close())
+        self.loop.run_until_complete(self.resolver.close())
         self.resolver = None  # type: ignore[assignment]
 
     def test_query_timeout(self) -> None:
