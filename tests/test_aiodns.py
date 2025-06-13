@@ -637,16 +637,16 @@ def test_del_with_stopped_event_loop() -> None:
     # Create resolver with this loop
     resolver = aiodns.DNSResolver(loop=loop)
 
-    # Track if cleanup was called
+    # Track if cleanup was called via channel.close
     cleanup_called = False
-    original_cleanup = resolver._cleanup
+    original_close = resolver._channel.close
 
-    def mock_cleanup():
+    def mock_close():
         nonlocal cleanup_called
         cleanup_called = True
-        original_cleanup()
+        original_close()
 
-    resolver._cleanup = mock_cleanup
+    resolver._channel.close = mock_close
 
     # Close the loop so it's not running
     loop.close()
