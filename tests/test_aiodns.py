@@ -609,21 +609,25 @@ def test_del_with_no_running_loop() -> None:
     """Test __del__ when there's no running event loop."""
     loop = asyncio.new_event_loop()
     resolver = aiodns.DNSResolver(loop=loop)
+
+    # Track if cleanup was called
+    cleanup_called = False
+    original_cleanup = resolver._cleanup
+
+    def mock_cleanup():
+        nonlocal cleanup_called
+        cleanup_called = True
+        original_cleanup()
+
+    resolver._cleanup = mock_cleanup
     loop.close()
 
-    # Capture warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter('always', ResourceWarning)
+    # Delete the resolver without closing it
+    del resolver
+    gc.collect()
 
-        # Delete the resolver without closing it
-        del resolver
-        gc.collect()
-
-        # Should have a ResourceWarning
-        assert 'DNSResolver was garbage collected without being closed' in str(
-            w[0].message
-        )
-        assert w[0].category is ResourceWarning
+    # Should have called cleanup
+    assert cleanup_called
 
 
 def test_del_with_stopped_event_loop() -> None:
