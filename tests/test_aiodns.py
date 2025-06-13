@@ -432,7 +432,7 @@ async def test_make_channel_ares_error(
         for part in unexpected_msg_parts:
             assert part not in caplog.text
 
-        resolver._closed = True  # type: ignore[assignment]
+        resolver._closed = True
 
 
 def test_win32_import_winloop_error() -> None:
@@ -613,12 +613,12 @@ def test_del_with_no_running_loop() -> None:
     cleanup_called = False
     original_close = resolver._channel.close
 
-    def mock_close():
+    def mock_close() -> None:
         nonlocal cleanup_called
         cleanup_called = True
         original_close()
 
-    resolver._channel.close = mock_close
+    resolver._channel.close = mock_close  # type: ignore[method-assign]
     loop.close()
 
     # Delete the resolver without closing it
@@ -699,8 +699,8 @@ async def test_cleanup_method() -> None:
     resolver._timer = mock_timer
 
     # Mock loop methods
-    resolver.loop.remove_reader = unittest.mock.MagicMock()
-    resolver.loop.remove_writer = unittest.mock.MagicMock()
+    resolver.loop.remove_reader = unittest.mock.MagicMock()  # type: ignore[method-assign]
+    resolver.loop.remove_writer = unittest.mock.MagicMock()  # type: ignore[method-assign]
 
     # Call cleanup
     resolver._cleanup()
@@ -710,10 +710,10 @@ async def test_cleanup_method() -> None:
     assert resolver._timer is None
 
     # Verify file descriptors were removed
-    resolver.loop.remove_reader.assert_any_call(1)
-    resolver.loop.remove_reader.assert_any_call(2)
-    resolver.loop.remove_writer.assert_any_call(3)
-    resolver.loop.remove_writer.assert_any_call(4)
+    resolver.loop.remove_reader.assert_any_call(1)  # type: ignore[attr-defined]
+    resolver.loop.remove_reader.assert_any_call(2)  # type: ignore[attr-defined]
+    resolver.loop.remove_writer.assert_any_call(3)  # type: ignore[attr-defined]
+    resolver.loop.remove_writer.assert_any_call(4)  # type: ignore[attr-defined]
 
     # Verify sets are cleared
     assert len(resolver._read_fds) == 0
@@ -733,12 +733,12 @@ async def test_context_manager() -> None:
         # Mock the close method to track if it's called
         original_close = resolver.close
 
-        async def mock_close():
+        async def mock_close() -> None:
             nonlocal resolver_closed
             resolver_closed = True
             await original_close()
 
-        resolver.close = mock_close
+        resolver.close = mock_close  # type: ignore[method-assign]
 
         # Resolver should be usable within context
         assert isinstance(resolver, aiodns.DNSResolver)
