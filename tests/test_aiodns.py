@@ -232,7 +232,7 @@ class TestQueryTxtChaos(DNSTest):
         self.assertTrue(result)
 
 
-class TestQueryTimeout(DNSTest):
+class TestQueryTimeout(unittest.TestCase):
     """Test DNS queries with timeout configuration."""
 
     def setUp(self) -> None:
@@ -246,6 +246,11 @@ class TestQueryTimeout(DNSTest):
             timeout=0.000001, tries=1, loop=self.loop
         )
         self.resolver.nameservers = ['1.2.3.4']
+
+    def tearDown(self) -> None:
+        if self.resolver is not None:
+            self.loop.run_until_complete(self.resolver.close())
+        self.resolver = None  # type: ignore[assignment]
 
     def test_query_timeout(self) -> None:
         f = self.resolver.query('google.com', 'A')
