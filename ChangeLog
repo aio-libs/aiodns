@@ -1,3 +1,22 @@
+3.5.0
+=====
+- Added explicit close method (#166)
+  - Allows proper cleanup of resources on demand
+- Fixed return type signature for CNAME and SOA records (#162)
+  - Corrected type annotations for better type checking
+- Improved Windows event loop documentation (#163)
+  - Provided more accurate information on supported event loops on Windows
+- Added pre-commit configuration with ruff (#152)
+  - Improved code quality and consistency
+  - Reformatted code and normalized end-of-line characters (#155)
+- Updated dependencies
+  - Bumped pycares from 4.8.0 to 4.9.0 (#168)
+  - Bumped pytest-asyncio from 0.26.0 to 1.0.0 (#167)
+  - Bumped pytest-cov from 6.1.1 to 6.2.1 (#164)
+  - Bumped pytest from 8.3.5 to 8.4.0 (#160)
+  - Bumped mypy from 1.15.0 to 1.16.0 (#158)
+  - Bumped dependabot/fetch-metadata from 2.3.0 to 2.4.0 (#159)
+
 3.4.0
 =====
 - Added fallback to `sock_state_cb` if `event_thread` creation fails (#151)
