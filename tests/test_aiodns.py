@@ -243,7 +243,7 @@ class TestQueryTimeout(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(
-            timeout=0.000001, tries=1, loop=self.loop
+            timeout=0.01, tries=1, loop=self.loop
         )
         self.resolver.nameservers = ['1.2.3.4']
 
