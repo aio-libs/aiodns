@@ -1,5 +1,5 @@
 -e .
-pycares==4.8.0
+pycares==4.9.0
 pytest==8.4.0
 pytest-asyncio==1.0.0
 pytest-cov==6.2.1
