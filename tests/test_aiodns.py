@@ -668,12 +668,12 @@ async def test_del_with_running_event_loop() -> None:
     original_close = resolver._channel.close
     cleanup_called = False
 
-    def mock_close():
+    def mock_close() -> None:
         nonlocal cleanup_called
         cleanup_called = True
         original_close()
 
-    resolver._channel.close = mock_close
+    resolver._channel.close = mock_close  # type: ignore[method-assign]
 
     # Delete resolver while loop is running
     del resolver
@@ -710,10 +710,10 @@ async def test_cleanup_method() -> None:
     assert resolver._timer is None
 
     # Verify file descriptors were removed
-    resolver.loop.remove_reader.assert_any_call(1)  # type: ignore[attr-defined]
-    resolver.loop.remove_reader.assert_any_call(2)  # type: ignore[attr-defined]
-    resolver.loop.remove_writer.assert_any_call(3)  # type: ignore[attr-defined]
-    resolver.loop.remove_writer.assert_any_call(4)  # type: ignore[attr-defined]
+    resolver.loop.remove_reader.assert_any_call(1)
+    resolver.loop.remove_reader.assert_any_call(2)
+    resolver.loop.remove_writer.assert_any_call(3)
+    resolver.loop.remove_writer.assert_any_call(4)
 
     # Verify sets are cleared
     assert len(resolver._read_fds) == 0
@@ -757,12 +757,12 @@ async def test_context_manager_with_exception() -> None:
             # Mock the close method to track if it's called
             original_close = resolver.close
 
-            async def mock_close():
+            async def mock_close() -> None:
                 nonlocal resolver_closed
                 resolver_closed = True
                 await original_close()
 
-            resolver.close = mock_close
+            resolver.close = mock_close  # type: ignore[method-assign]
 
             # Raise an exception within the context
             raise ValueError('Test exception')
@@ -781,7 +781,7 @@ async def test_context_manager_close_idempotent() -> None:
     async with aiodns.DNSResolver() as resolver:
         original_close = resolver.close
 
-        async def mock_close():
+        async def mock_close() -> None:
             nonlocal close_count
             close_count += 1
             await original_close()
