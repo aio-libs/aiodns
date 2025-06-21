@@ -33,9 +33,6 @@ WINDOWS_SELECTOR_ERR_MSG = (
 
 _LOGGER = logging.getLogger(__name__)
 
-READ = 1
-WRITE = 2
-
 query_type_map = {
     'A': pycares.QUERY_TYPE_A,
     'AAAA': pycares.QUERY_TYPE_AAAA,
@@ -271,10 +268,10 @@ class DNSResolver:
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
         if readable or writable:
             if readable:
-                self.loop.add_reader(fd, self._handle_read_event, fd, READ)
+                self.loop.add_reader(fd, self._handle_read_event, fd)
                 self._read_fds.add(fd)
             if writable:
-                self.loop.add_writer(fd, self._handle_write_event, fd, WRITE)
+                self.loop.add_writer(fd, self._handle_write_event, fd)
                 self._write_fds.add(fd)
             if self._timer is None:
                 self._start_timer()
