@@ -268,11 +268,13 @@ class DNSResolver:
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
         if readable or writable:
             if readable:
-                self.loop.add_reader(fd, self._handle_read_event, fd)
+                self.loop.add_reader(
+                    fd, self._channel.process_fd, fd, pycares.ARES_SOCKET_BAD
+                )
                 self._read_fds.add(fd)
             if writable:
                 self.loop.add_writer(
-                    fd, self._handle_write_event, fd
+                     fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
                 )  # pragma: no cover
                 self._write_fds.add(fd)  # pragma: no cover
             if self._timer is None:
@@ -294,14 +296,6 @@ class DNSResolver:
             ):
                 self._timer.cancel()
                 self._timer = None
-
-    def _handle_write_event(self, fd: int) -> None:
-        self._channel.process_fd(
-            pycares.ARES_SOCKET_BAD, fd
-        )  # pragma: no cover
-
-    def _handle_read_event(self, fd: int) -> None:
-        self._channel.process_fd(fd, pycares.ARES_SOCKET_BAD)
 
     def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
