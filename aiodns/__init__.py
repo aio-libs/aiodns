@@ -271,7 +271,9 @@ class DNSResolver:
                 self.loop.add_reader(fd, self._handle_read_event, fd)
                 self._read_fds.add(fd)
             if writable:
-                self.loop.add_writer(fd, self._handle_write_event, fd)  # pragma: no cover
+                self.loop.add_writer(
+                    fd, self._handle_write_event, fd
+                )  # pragma: no cover
                 self._write_fds.add(fd)  # pragma: no cover
             if self._timer is None:
                 self._start_timer()
@@ -294,7 +296,9 @@ class DNSResolver:
                 self._timer = None
 
     def _handle_write_event(self, fd: int) -> None:
-        self._channel.process_fd(pycares.ARES_SOCKET_BAD, fd)  # pragma: no cover
+        self._channel.process_fd(
+            pycares.ARES_SOCKET_BAD, fd
+        )  # pragma: no cover
 
     def _handle_read_event(self, fd: int) -> None:
         self._channel.process_fd(fd, pycares.ARES_SOCKET_BAD)
