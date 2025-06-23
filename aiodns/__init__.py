@@ -275,8 +275,8 @@ class DNSResolver:
             if writable:
                 self.loop.add_writer(
                     fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
-                )  # pragma: no cover
-                self._write_fds.add(fd)  # pragma: no cover
+                )
+                self._write_fds.add(fd)
             if self._timer is None:
                 self._start_timer()
         else:
