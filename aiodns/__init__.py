@@ -33,9 +33,6 @@ WINDOWS_SELECTOR_ERR_MSG = (
 
 _LOGGER = logging.getLogger(__name__)
 
-READ = 1
-WRITE = 2
-
 query_type_map = {
     'A': pycares.QUERY_TYPE_A,
     'AAAA': pycares.QUERY_TYPE_AAAA,
@@ -271,10 +268,14 @@ class DNSResolver:
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
         if readable or writable:
             if readable:
-                self.loop.add_reader(fd, self._handle_event, fd, READ)
+                self.loop.add_reader(
+                    fd, self._channel.process_fd, fd, pycares.ARES_SOCKET_BAD
+                )
                 self._read_fds.add(fd)
             if writable:
-                self.loop.add_writer(fd, self._handle_event, fd, WRITE)
+                self.loop.add_writer(
+                    fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
+                )
                 self._write_fds.add(fd)
             if self._timer is None:
                 self._start_timer()
@@ -295,15 +296,6 @@ class DNSResolver:
             ):
                 self._timer.cancel()
                 self._timer = None
-
-    def _handle_event(self, fd: int, event: int) -> None:
-        read_fd = pycares.ARES_SOCKET_BAD
-        write_fd = pycares.ARES_SOCKET_BAD
-        if event == READ:
-            read_fd = fd
-        elif event == WRITE:
-            write_fd = fd
-        self._channel.process_fd(read_fd, write_fd)
 
     def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
@@ -335,9 +327,9 @@ class DNSResolver:
             self._timer = None
 
         # Remove all file descriptors
-        for fd in list(self._read_fds):
+        for fd in self._read_fds:
             self.loop.remove_reader(fd)
-        for fd in list(self._write_fds):
+        for fd in self._write_fds:
             self.loop.remove_writer(fd)
 
         self._read_fds.clear()
