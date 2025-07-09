@@ -79,15 +79,7 @@ class DNSResolver:
         self._timer: Optional[asyncio.TimerHandle] = None
         self._closed = False
 
-    # NOTE: Separated incase needed to tested separately,
-    # some windows builds can compiled with threadsafety
-    def _raise_if_windows_proactor_event_loop(self):
-        if (
-            sys.platform == 'win32'
-            and type(self.loop) is asyncio.ProactorEventLoop
-        ):
-            raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
-
+    
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         if (
             hasattr(pycares, 'ares_threadsafety')
@@ -115,8 +107,9 @@ class DNSResolver:
                         'Falling back to socket state callback: %s',
                         e,
                     )
-
-        self._raise_if_windows_proactor_event_loop()
+        if sys.platform == 'win32':
+            if type(self.loop) is asyncio.ProactorEventLoop:
+                raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
 
         return False, pycares.Channel(
             sock_state_cb=self._sock_state_cb, timeout=self._timeout, **kwargs
