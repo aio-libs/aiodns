@@ -419,7 +419,7 @@ async def test_make_channel_ares_error(
 
 
 @pytest.mark.skipif(
-    not hasattr(asyncio, 'ProactorEventLoop'),
+    not getattr(asyncio, 'ProactorEventLoop', None),
     reason="ProactorEventLoop can't be simulated",
 )
 @pytest.mark.asyncio
