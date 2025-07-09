@@ -423,7 +423,7 @@ async def test_make_channel_ares_error(
     reason="ProactorEventLoop can't be simulated",
 )
 @pytest.mark.asyncio
-async def test_runtime_error_if_windows_proactor_event_loop():
+async def test_runtime_error_if_windows_proactor_event_loop() -> None:
     with (
         unittest.mock.patch(
             'aiodns.pycares.ares_threadsafety', return_value=False
