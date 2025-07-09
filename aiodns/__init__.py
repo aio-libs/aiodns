@@ -79,7 +79,6 @@ class DNSResolver:
         self._timer: Optional[asyncio.TimerHandle] = None
         self._closed = False
 
-    
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         if (
             hasattr(pycares, 'ares_threadsafety')
