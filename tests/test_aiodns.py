@@ -419,19 +419,19 @@ async def test_make_channel_ares_error(
 
 
 @pytest.mark.skipif(
-    not getattr(asyncio, 'ProactorEventLoop', None),
+    sys.platform == 'win32',
     reason="ProactorEventLoop can't be simulated",
 )
 @pytest.mark.asyncio
 async def test_runtime_error_if_windows_proactor_event_loop():
     with (
-        unittest.mock.patch('sys.platform', 'win32'),
         unittest.mock.patch(
             'aiodns.pycares.ares_threadsafety', return_value=False
         ),
         pytest.raises(
             RuntimeError,
-            match=r'aiodns cannot use ProactorEventLoop on Windows if pycares has no threadsafety. See more: '
+            match=r'aiodns cannot use ProactorEventLoop on Windows'
+            r' if pycares has no threadsafety. See more: '
             r'https://github.com/aio-libs/aiodns#note-for-windows-users',
         ),
     ):
