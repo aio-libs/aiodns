@@ -27,7 +27,7 @@ __all__ = ('DNSResolver', 'error')
 _T = TypeVar('_T')
 
 WINDOWS_SELECTOR_ERR_MSG = (
-    'aiodns cannot use ProactorEventLoop on Windows if event-threads cant be utilized. See more: '
+    'aiodns cannot use ProactorEventLoop on Windows if pycares has no threadsafety. See more: '
     'https://github.com/aio-libs/aiodns#note-for-windows-users'
 )
 

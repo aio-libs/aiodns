@@ -427,7 +427,7 @@ async def test_runtime_error_if_windows_proactor_event_loop():
         ),
         pytest.raises(
             RuntimeError,
-            match=r'aiodns cannot use ProactorEventLoop on Windows if event-threads cant be utilized. See more: '
+            match=r'aiodns cannot use ProactorEventLoop on Windows if pycares has no threadsafety. See more: '
             r'https://github.com/aio-libs/aiodns#note-for-windows-users',
         ),
     ):
