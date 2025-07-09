@@ -41,14 +41,14 @@ The API is pretty simple, the following functions are provided in the ``DNSResol
   instance of ``asyncio.Future``. The actual result of the DNS query is taken directly from pycares.
   As of version 1.0.0 of aiodns (and pycares, for that matter) results are always namedtuple-like
   objects with different attributes. Please check the `documentation
-  <http://pycares.readthedocs.org/en/latest/channel.html#pycares.Channel.query>`_
+  <http://pycares.readthedocs.org/latest/channel.html#pycares.Channel.query>`_
   for the result fields.
 * ``gethostbyname(host, socket_family)``: Do a DNS resolution for the given
   hostname and the desired type of address family (i.e. ``socket.AF_INET``).
   While ``query()`` always performs a request to a DNS server,
   ``gethostbyname()`` first looks into ``/etc/hosts`` and thus can resolve
   local hostnames (such as ``localhost``).  Please check `the documentation
-  <http://pycares.readthedocs.io/en/latest/channel.html#pycares.Channel.gethostbyname>`_
+  <http://pycares.readthedocs.io/latest/channel.html#pycares.Channel.gethostbyname>`_
   for the result fields. The actual result of the call is a ``asyncio.Future``.
 * ``gethostbyaddr(name)``: Make a reverse lookup for an address.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
