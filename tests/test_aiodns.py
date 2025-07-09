@@ -419,7 +419,7 @@ async def test_make_channel_ares_error(
 
 
 @pytest.mark.skipif(
-    sys.platform == 'win32',
+    sys.platform != 'win32',
     reason="ProactorEventLoop can't be simulated",
 )
 @pytest.mark.asyncio
