@@ -108,7 +108,7 @@ class DNSResolver:
                         e,
                     )
         if sys.platform == 'win32':
-            if type(self.loop) is asyncio.ProactorEventLoop:
+            if hasattr(asyncio, "ProactorEventLoop") and type(self.loop) is asyncio.ProactorEventLoop:
                 raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
 
         return False, pycares.Channel(
