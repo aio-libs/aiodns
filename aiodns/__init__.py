@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import functools
 import logging
@@ -14,6 +15,7 @@ from typing import (
     TypeVar,
     Union,
     overload,
+    TypedDict,
 )
 
 import pycares
@@ -56,14 +58,67 @@ query_class_map = {
     'ANY': pycares.QUERY_CLASS_ANY,
 }
 
+if sys.version_info >= (3, 11):
+    from typing import Unpack
+
+    class DNSResolverKwargs(TypedDict):
+        flags: int | None
+        timeout: float | None
+        tries: int | None
+        ndots: int | None
+        tcp_port: int | None
+        udp_port: int | None
+        domains: Sequence[str] | None
+        lookups: str | None
+        socket_send_buffer_size: int | None
+        socket_receive_buffer_size: int | None
+        rotate: bool
+        local_ip: str | None
+        local_dev: str | None
+        resolvconf_path: str | None
+
 
 class DNSResolver:
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            nameservers: Optional[Sequence[str]] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+            **kwargs: Unpack[DNSResolverKwargs],
+        ) -> None: ...
+    else:
+        # Reserve backwards compatability for older versions
+        # of Python
+        @overload
+        def __init__(
+            self,
+            nameservers: Optional[Sequence[str]] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+            *,
+            flags: int | None = None,
+            timeout: float | None = None,
+            tries: int | None = None,
+            ndots: int | None = None,
+            tcp_port: int | None = None,
+            udp_port: int | None = None,
+            domains: Sequence[str] | None = None,
+            lookups: str | None = None,
+            socket_send_buffer_size: int | None = None,
+            socket_receive_buffer_size: int | None = None,
+            rotate: bool = False,
+            local_ip: str | None = None,
+            local_dev: str | None = None,
+            resolvconf_path: str | None = None,
+        ) -> None: ...
+
     def __init__(
         self,
         nameservers: Optional[Sequence[str]] = None,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs: Any,
-    ) -> None:  # TODO(PY311): Use Unpack for kwargs.
+        **kwargs,
+    ) -> None:
         self._closed = True
         self.loop = loop or asyncio.get_event_loop()
         if TYPE_CHECKING:
