@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import functools
 import logging
@@ -12,10 +13,10 @@ from typing import (
     Callable,
     Literal,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
     overload,
-    TypedDict,
 )
 
 import pycares
@@ -84,20 +85,18 @@ class DNSResolver:
         @overload
         def __init__(
             self,
-            nameservers: Optional[Sequence[str]] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
+            nameservers: Sequence[str] | None = None,
+            loop: asyncio.AbstractEventLoop | None = None,
             **kwargs: Unpack[DNSResolverKwargs],
         ) -> None: ...
     else:
         # Reserve backwards compatability for older versions
         # of Python
-        # TODO: Move all Optional[...] typehints to Pipe Annotations -> | 
-        # For neatness & enhanced readbility
         @overload
         def __init__(
             self,
-            nameservers: Optional[Sequence[str]] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
+            nameservers: Sequence[str] | None = None,
+            loop: asyncio.AbstractEventLoop | None = None,
             *,
             flags: int | None = None,
             timeout: float | None = None,
@@ -117,8 +116,8 @@ class DNSResolver:
 
     def __init__(
         self,
-        nameservers: Optional[Sequence[str]] = None,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        nameservers: Sequence[str] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
         **kwargs: Any,
     ) -> None:
         self._closed = True
@@ -187,7 +186,7 @@ class DNSResolver:
 
     @staticmethod
     def _callback(
-        fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
+        fut: asyncio.Future[_T], result: _T, errorno: int | None
     ) -> None:
         if fut.cancelled():
             return
@@ -200,7 +199,7 @@ class DNSResolver:
 
     def _get_future_callback(
         self,
-    ) -> tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
+    ) -> tuple[asyncio.Future[_T], Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
         future: asyncio.Future[_T] = self.loop.create_future()
@@ -216,51 +215,51 @@ class DNSResolver:
 
     @overload
     def query(
-        self, host: str, qtype: Literal['A'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['A'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_a_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['AAAA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['AAAA'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_aaaa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['CAA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CAA'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_caa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['CNAME'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CNAME'], qclass: str | None = ...
     ) -> asyncio.Future[pycares.ares_query_cname_result]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['MX'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['MX'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_mx_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['NAPTR'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NAPTR'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_naptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['NS'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NS'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_ns_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['PTR'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['PTR'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_ptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['SOA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SOA'], qclass: str | None = ...
     ) -> asyncio.Future[pycares.ares_query_soa_result]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['SRV'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SRV'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_srv_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['TXT'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['TXT'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_txt_result]]: ...
 
     def query(
-        self, host: str, qtype: str, qclass: Optional[str] = None
+        self, host: str, qtype: str, qclass: str | None = None
     ) -> Union[asyncio.Future[list[Any]], asyncio.Future[Any]]:
         try:
             qtype = query_type_map[qtype]
@@ -303,7 +302,7 @@ class DNSResolver:
 
     def getnameinfo(
         self,
-        sockaddr: Union[tuple[str, int], tuple[str, int, int, int]],
+        sockaddr: tuple[str, int] | tuple[str, int, int, int],
         flags: int = 0,
     ) -> asyncio.Future[pycares.ares_nameinfo_result]:
         fut: asyncio.Future[pycares.ares_nameinfo_result]
@@ -402,15 +401,15 @@ class DNSResolver:
         """
         self._cleanup()
 
-    async def __aenter__(self) -> 'DNSResolver':
+    async def __aenter__(self) -> DNSResolver:
         """Enter the async context manager."""
         return self
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit the async context manager."""
         await self.close()
