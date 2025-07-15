@@ -12,10 +12,8 @@ from typing import (
     Any,
     Callable,
     Literal,
-    Optional,
     TypedDict,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -139,7 +137,7 @@ class DNSResolver:
             self.nameservers = nameservers
         self._read_fds: set[int] = set()
         self._write_fds: set[int] = set()
-        self._timer: Optional[asyncio.TimerHandle] = None
+        self._timer: asyncio.TimerHandle | None = None
         self._closed = False
 
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
@@ -188,7 +186,7 @@ class DNSResolver:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
+    def nameservers(self, value: Iterable[str | bytes]) -> None:
         self._channel.servers = value
 
     @staticmethod
@@ -267,7 +265,7 @@ class DNSResolver:
 
     def query(
         self, host: str, qtype: str, qclass: str | None = None
-    ) -> Union[asyncio.Future[list[Any]], asyncio.Future[Any]]:
+    ) -> asyncio.Future[list[Any]] | asyncio.Future[Any]:
         try:
             qtype = query_type_map[qtype]
         except KeyError as e:
@@ -278,7 +276,7 @@ class DNSResolver:
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut: Union[asyncio.Future[list[Any]], asyncio.Future[Any]]
+        fut: asyncio.Future[list[Any]] | asyncio.Future[Any]
         fut, cb = self._get_future_callback()
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
@@ -295,7 +293,7 @@ class DNSResolver:
         self,
         host: str,
         family: socket.AddressFamily = socket.AF_UNSPEC,
-        port: Optional[int] = None,
+        port: int | None = None,
         proto: int = 0,
         type: int = 0,
         flags: int = 0,
