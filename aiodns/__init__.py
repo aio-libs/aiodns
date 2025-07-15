@@ -91,6 +91,8 @@ class DNSResolver:
     else:
         # Reserve backwards compatability for older versions
         # of Python
+        # TODO: Move all Optional[...] typehints to Pipe Annotations -> | 
+        # For neatness & enhanced readbility
         @overload
         def __init__(
             self,
