@@ -117,7 +117,7 @@ class DNSResolver:
         self,
         nameservers: Optional[Sequence[str]] = None,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         self._closed = True
         self.loop = loop or asyncio.get_event_loop()
