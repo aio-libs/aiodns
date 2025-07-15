@@ -80,6 +80,13 @@ if sys.version_info >= (3, 11):
 
 
 class DNSResolver:
+    @overload
+    def __init__(
+        self,
+        nameservers: Sequence[str] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+    ) -> None:...
+    
     if sys.version_info >= (3, 11):
 
         @overload
