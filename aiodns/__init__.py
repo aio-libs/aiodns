@@ -186,7 +186,7 @@ class DNSResolver:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value: Iterable[str | bytes]) -> None:
+    def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
         self._channel.servers = value
 
     @staticmethod
@@ -265,7 +265,7 @@ class DNSResolver:
 
     def query(
         self, host: str, qtype: str, qclass: Optional[str] = None
-    ) -> asyncio.Future[list[Any]] | asyncio.Future[Any]:
+    ) -> Union[asyncio.Future[list[Any]], asyncio.Future[Any]]:
         try:
             qtype = query_type_map[qtype]
         except KeyError as e:
@@ -276,7 +276,7 @@ class DNSResolver:
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut: asyncio.Future[list[Any]] | asyncio.Future[Any]
+        fut: Union[asyncio.Future[list[Any]], asyncio.Future[Any]]
         fut, cb = self._get_future_callback()
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
