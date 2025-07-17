@@ -268,7 +268,7 @@ class TestUV_DNS(DNSTest):
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
-        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
+        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)  # type: ignore[call-overload]
         self.resolver.nameservers = ['8.8.8.8']
 
 
@@ -302,7 +302,7 @@ class TestUV_QueryTimeout(TestQueryTimeout):
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
-        self.resolver = aiodns.DNSResolver(
+        self.resolver = aiodns.DNSResolver(  # type: ignore[call-overload]
             timeout=0.1, tries=1, loop=self.loop
         )
         self.resolver.nameservers = ['1.2.3.4']
