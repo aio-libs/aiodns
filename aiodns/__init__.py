@@ -10,11 +10,11 @@ from typing import (
     Any,
     Callable,
     Literal,
+    Optional,
     TypedDict,
     TypeVar,
-    overload,
     Union,
-    Optional
+    overload,
 )
 
 import pycares
@@ -62,27 +62,27 @@ if sys.version_info >= (3, 11):
 
     class DNSResolverKwargs(TypedDict):
         flags: Optional[int]
-        timeout: float | None
+        timeout: Optional[float]
         tries: Optional[int]
         ndots: Optional[int]
         tcp_port: Optional[int]
         udp_port: Optional[int]
-        domains: Sequence[str] | None
-        lookups: str | None
+        domains: Optional[Sequence[str]]
+        lookups: Optional[str]
         socket_send_buffer_size: Optional[int]
         socket_receive_buffer_size: Optional[int]
         rotate: bool
-        local_ip: str | None
-        local_dev: str | None
-        resolvconf_path: str | None
+        local_ip: Optional[str]
+        local_dev: Optional[str]
+        resolvconf_path: Optional[str]
 
 
 class DNSResolver:
     @overload
     def __init__(
         self,
-        nameservers: Sequence[str] | None = None,
-        loop: asyncio.AbstractEventLoop | None = None,
+        nameservers: Optional[Sequence[str]] = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None: ...
 
     if sys.version_info >= (3, 11):
@@ -90,8 +90,8 @@ class DNSResolver:
         @overload
         def __init__(
             self,
-            nameservers: Sequence[str] | None = None,
-            loop: asyncio.AbstractEventLoop | None = None,
+            nameservers: Optional[Sequence[str]] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
             **kwargs: Unpack[DNSResolverKwargs],
         ) -> None: ...
     else:
@@ -100,16 +100,16 @@ class DNSResolver:
         @overload
         def __init__(
             self,
-            nameservers: Sequence[str] | None = None,
-            loop: asyncio.AbstractEventLoop | None = None,
+            nameservers: Optional[Sequence[str]] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
             *,
             flags: Optional[int] = None,
-            timeout: float | None = None,
+            timeout: Optional[float] = None,
             tries: Optional[int] = None,
             ndots: Optional[int] = None,
             tcp_port: Optional[int] = None,
             udp_port: Optional[int] = None,
-            domains: Sequence[str] | None = None,
+            domains: Optional[Sequence[str]] = None,
             lookups: Optional[str] = None,
             socket_send_buffer_size: Optional[int] = None,
             socket_receive_buffer_size: Optional[int] = None,
@@ -121,8 +121,8 @@ class DNSResolver:
 
     def __init__(
         self,
-        nameservers: Sequence[str] | None = None,
-        loop: asyncio.AbstractEventLoop | None = None,
+        nameservers: Optional[Sequence[str]] = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
         **kwargs: Any,
     ) -> None:
         self._closed = True
@@ -137,7 +137,7 @@ class DNSResolver:
             self.nameservers = nameservers
         self._read_fds: set[int] = set()
         self._write_fds: set[int] = set()
-        self._timer: asyncio.TimerHandle | None = None
+        self._timer: Optional[asyncio.TimerHandle] = None
         self._closed = False
 
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
@@ -406,15 +406,15 @@ class DNSResolver:
         """
         self._cleanup()
 
-    async def __aenter__(self) -> "DNSResolver":
+    async def __aenter__(self) -> 'DNSResolver':
         """Enter the async context manager."""
         return self
 
     async def __aexit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
     ) -> None:
         """Exit the async context manager."""
         await self.close()
