@@ -37,7 +37,7 @@ class DNSTest(unittest.TestCase):
             )
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
-        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
+        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)  # type: ignore[call-overload]
         self.resolver.nameservers = ['8.8.8.8']
 
     def tearDown(self) -> None:
@@ -346,7 +346,7 @@ def test_win32_no_selector_event_loop() -> None:
         ),
         unittest.mock.patch('sys.platform', 'win32'),
     ):
-        aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
+        aiodns.DNSResolver(loop=mock_loop, timeout=5.0)  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize(
