@@ -1,7 +1,7 @@
 -e .
 pycares==4.9.0
 pytest==8.4.1
-pytest-asyncio==1.0.0
+pytest-asyncio==1.1.0
 pytest-cov==6.2.1
 uvloop==0.21.0; platform_system != "Windows" and implementation_name == "cpython"
-winloop==0.1.8; platform_system == "Windows"
+winloop==0.2.1; platform_system == "Windows"
