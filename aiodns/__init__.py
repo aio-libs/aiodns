@@ -58,23 +58,23 @@ query_class_map = {
 }
 
 if sys.version_info >= (3, 11):
-    from typing import Unpack
+    from typing import Unpack, NotRequired
 
     class DNSResolverKwargs(TypedDict):
-        flags: Optional[int]
-        timeout: Optional[float]
-        tries: Optional[int]
-        ndots: Optional[int]
-        tcp_port: Optional[int]
-        udp_port: Optional[int]
-        domains: Optional[Sequence[str]]
-        lookups: Optional[str]
-        socket_send_buffer_size: Optional[int]
-        socket_receive_buffer_size: Optional[int]
-        rotate: bool
-        local_ip: Optional[str]
-        local_dev: Optional[str]
-        resolvconf_path: Optional[str]
+        flags: NotRequired[int]
+        timeout: NotRequired[float]
+        tries: NotRequired[int]
+        ndots: NotRequired[int]
+        tcp_port: NotRequired[int]
+        udp_port: NotRequired[int]
+        domains: NotRequired[Sequence[str]]
+        lookups: NotRequired[str]
+        socket_send_buffer_size: NotRequired[int]
+        socket_receive_buffer_size: NotRequired[int]
+        rotate: NotRequired[bool]
+        local_ip: NotRequired[str]
+        local_dev: NotRequired[str]
+        resolvconf_path: NotRequired[str]
 
 
 class DNSResolver:
