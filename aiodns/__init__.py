@@ -85,6 +85,7 @@ class DNSResolver:
     ) -> None:...
 
     if sys.version_info >= (3, 11):
+        @overload
         def __init__(
             self,
             nameservers: Optional[Sequence[str]] = ...,
