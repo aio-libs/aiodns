@@ -58,7 +58,7 @@ query_class_map = {
 }
 
 if sys.version_info >= (3, 11):
-    from typing import Unpack, NotRequired
+    from typing import NotRequired, Unpack
 
     class DNSResolverKwargs(TypedDict):
         flags: NotRequired[int]
@@ -96,7 +96,7 @@ class DNSResolver:
         # Reserve backwards compatability for older versions
         # of Python
     else:
-        @overload  
+        @overload
         def __init__(
             self,
             nameservers: Optional[Sequence[str]] = ...,
@@ -117,7 +117,7 @@ class DNSResolver:
             local_dev: Optional[str] = None,
             resolvconf_path: Optional[str] = None,
         ) -> None: ...
-   
+
     def __init__(
         self,
         nameservers: Optional[Sequence[str]] = None,
