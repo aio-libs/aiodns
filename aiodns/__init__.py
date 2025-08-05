@@ -79,12 +79,14 @@ if sys.version_info >= (3, 11):
 
 class DNSResolver:
     @overload
-    def __init__(self,
+    def __init__(
+        self,
         nameservers: Optional[Sequence[str]] = None,
-        loop: Optional[asyncio.AbstractEventLoop] = None
-    ) -> None:...
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None: ...
 
     if sys.version_info >= (3, 11):
+
         @overload
         def __init__(
             self,
@@ -96,6 +98,7 @@ class DNSResolver:
         # Reserve backwards compatability for older versions
         # of Python
     else:
+
         @overload
         def __init__(
             self,
