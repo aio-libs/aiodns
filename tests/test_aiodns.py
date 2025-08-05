@@ -265,7 +265,7 @@ class TestQueryTimeout(unittest.TestCase):
 @unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
 class TestUV_DNS(DNSTest):
     def setUp(self) -> None:
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())  # type: ignore[no-untyped-call]
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
@@ -287,7 +287,7 @@ class TestUV_QueryTxtChaos(TestQueryTxtChaos):
     """Test DNS queries with CHAOS class using uvloop."""
 
     def setUp(self) -> None:
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())  # type: ignore[no-untyped-call]
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
@@ -299,7 +299,7 @@ class TestUV_QueryTimeout(TestQueryTimeout):
     """Test DNS queries with timeout configuration using uvloop."""
 
     def setUp(self) -> None:
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())  # type: ignore[no-untyped-call]
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(
