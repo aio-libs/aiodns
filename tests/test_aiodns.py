@@ -37,7 +37,7 @@ class DNSTest(unittest.TestCase):
             )
         self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
-        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
+        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0) # type[aiodns.DNSResolver | None]
         self.resolver.nameservers = ['8.8.8.8']
 
     def tearDown(self) -> None:
@@ -248,7 +248,7 @@ class TestQueryTimeout(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.loop.run_until_complete(self.resolver.close())
-        self.resolver = None  # type: ignore[assignment]
+        self.resolver = None # type: ignore[assignment]
 
     def test_query_timeout(self) -> None:
         f = self.resolver.query('google.com', 'A')

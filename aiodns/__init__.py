@@ -78,33 +78,28 @@ if sys.version_info >= (3, 11):
 
 
 class DNSResolver:
-    if TYPE_CHECKING:
-
-        @overload
-        def __init__(
-            self,
-            nameservers: Optional[Sequence[str]] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
-        ) -> None: ...
+    @overload
+    def __init__(self,
+        nameservers: Optional[Sequence[str]] = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None
+    ) -> None:...
 
     if sys.version_info >= (3, 11):
-        if TYPE_CHECKING:
-
-            @overload
-            def __init__(
-                self,
-                nameservers: Optional[Sequence[str]] = None,
-                loop: Optional[asyncio.AbstractEventLoop] = None,
-                **kwargs: Unpack[DNSResolverKwargs],
-            ) -> None: ...
-    elif TYPE_CHECKING:
-        # Reserve backwards compatability for older versions
-        # of Python
-        @overload
         def __init__(
             self,
-            nameservers: Optional[Sequence[str]] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
+            nameservers: Optional[Sequence[str]] = ...,
+            loop: Optional[asyncio.AbstractEventLoop] = ...,
+            **kwargs: Unpack[DNSResolverKwargs],
+        ) -> None: ...
+
+        # Reserve backwards compatability for older versions
+        # of Python
+    else:
+        @overload  
+        def __init__(
+            self,
+            nameservers: Optional[Sequence[str]] = ...,
+            loop: Optional[asyncio.AbstractEventLoop] = ...,
             *,
             flags: Optional[int] = None,
             timeout: Optional[float] = None,
@@ -121,7 +116,7 @@ class DNSResolver:
             local_dev: Optional[str] = None,
             resolvconf_path: Optional[str] = None,
         ) -> None: ...
-
+   
     def __init__(
         self,
         nameservers: Optional[Sequence[str]] = None,
