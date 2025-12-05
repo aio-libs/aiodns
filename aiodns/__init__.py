@@ -27,7 +27,8 @@ __all__ = ('DNSResolver', 'error')
 _T = TypeVar('_T')
 
 WINDOWS_SELECTOR_ERR_MSG = (
-    'aiodns needs a SelectorEventLoop on Windows. See more: '
+    'aiodns cannot use ProactorEventLoop on Windows'
+    ' if pycares has no threadsafety. See more: '
     'https://github.com/aio-libs/aiodns#note-for-windows-users'
 )
 
@@ -106,16 +107,13 @@ class DNSResolver:
                         'Falling back to socket state callback: %s',
                         e,
                     )
-        if sys.platform == 'win32' and not isinstance(
-            self.loop, asyncio.SelectorEventLoop
-        ):
-            try:
-                import winloop
+        if sys.platform == 'win32':
+            if (
+                hasattr(asyncio, 'ProactorEventLoop')
+                and type(self.loop) is asyncio.ProactorEventLoop
+            ):
+                raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
 
-                if not isinstance(self.loop, winloop.Loop):
-                    raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
-            except ModuleNotFoundError as ex:
-                raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
         return False, pycares.Channel(
             sock_state_cb=self._sock_state_cb, timeout=self._timeout, **kwargs
         )
