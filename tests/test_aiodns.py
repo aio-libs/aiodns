@@ -575,7 +575,9 @@ def test_win32_winloop_loop_instance() -> None:
 @pytest.mark.asyncio
 async def test_close_resolver() -> None:
     """Test that DNSResolver.close() properly shuts down the resolver."""
+    # Use a non-routable IP to ensure the query doesn't complete before close
     resolver = aiodns.DNSResolver()
+    resolver.nameservers = ['192.0.2.1']  # TEST-NET-1, non-routable
 
     # Create a query to ensure resolver is active
     query_future = resolver.query('google.com', 'A')
