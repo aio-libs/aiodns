@@ -1,3 +1,24 @@
+3.6.0
+=====
+- Fix resolver garbage collection during pending queries (#211)
+  - Prevents resolver from being garbage collected while queries are in progress
+- Socket callback optimizations (#172)
+  - Improved performance for socket state handling
+- Fixed RTD links (#176)
+- Added Python 3.14 to the CI (#212)
+- Updated dependencies
+  - Bumped pycares from 4.9.0 to 4.11.0 (#186, #194)
+  - Bumped pytest-asyncio from 1.0.0 to 1.2.0 (#181, #196)
+  - Bumped pytest-cov from 6.2.1 to 7.0.0 (#193)
+  - Bumped pytest from 8.4.0 to 8.4.2 (#171, #190)
+  - Bumped mypy from 1.16.0 to 1.19.0 (#170, #179, #185, #195, #197, #207)
+  - Bumped uvloop from 0.21.0 to 0.22.1 (#202)
+  - Bumped winloop from 0.1.8 to 0.3.1 (#182, #183, #184, #187, #200, #201, #203)
+  - Bumped actions/setup-python from 5 to 6 (#199)
+  - Bumped actions/checkout from 4 to 6 (#188, #208)
+  - Bumped actions/upload-artifact from 4 to 5 (#204)
+  - Bumped actions/download-artifact from 4.3.0 to 6.0.0 (#205)
+
 3.5.0
 =====
 - Added explicit close method (#166)
