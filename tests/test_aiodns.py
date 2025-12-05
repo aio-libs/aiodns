@@ -801,5 +801,31 @@ async def test_context_manager_close_idempotent() -> None:
     assert close_count == 2
 
 
+@pytest.mark.asyncio
+async def test_temporary_resolver_not_garbage_collected() -> None:
+    """Test temporary resolver is not garbage collected before query completes.
+
+    Regression test for https://github.com/aio-libs/aiodns/issues/209
+
+    When calling query() on a temporary resolver (not stored in a variable),
+    the resolver should not be garbage collected before the query completes.
+    Previously, the callback was a @staticmethod which didn't hold a reference
+    to self, causing the resolver to be garbage collected and the query
+    cancelled.
+    """
+    # Force garbage collection to ensure any weak references are cleared
+    gc.collect()
+
+    # This pattern previously failed with DNSError(24, 'DNS query cancelled')
+    # because the resolver was garbage collected before the query completed
+    result = await aiodns.DNSResolver(nameservers=['8.8.8.8']).query(
+        'google.com', 'A'
+    )
+
+    # Query should succeed
+    assert result
+    assert len(result) > 0
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)

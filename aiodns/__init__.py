@@ -128,9 +128,8 @@ class DNSResolver:
     def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
         self._channel.servers = value
 
-    @staticmethod
     def _callback(
-        fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
+        self, fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
     ) -> None:
         if fut.cancelled():
             return
