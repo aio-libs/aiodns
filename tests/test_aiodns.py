@@ -36,10 +36,16 @@ if sys.version_info >= (3, 14):
 class DNSTest(unittest.TestCase):
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                # Policy deprecated in 3.14, create SelectorEventLoop directly
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
         self.resolver.nameservers = ['8.8.8.8']
@@ -221,10 +227,15 @@ class TestQueryTxtChaos(DNSTest):
 
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
         self.resolver.nameservers = ['1.1.1.1']
@@ -240,10 +251,15 @@ class TestQueryTimeout(unittest.TestCase):
 
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(
             timeout=0.1, tries=1, loop=self.loop
