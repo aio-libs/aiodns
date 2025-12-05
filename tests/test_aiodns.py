@@ -28,6 +28,10 @@ try:
 except ModuleNotFoundError:
     skip_uvloop = True
 
+# Skip uvloop tests on Python 3.14+ due to EventLoopPolicy deprecation
+if sys.version_info >= (3, 14):
+    skip_uvloop = True
+
 
 class DNSTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -262,7 +266,7 @@ class TestQueryTimeout(unittest.TestCase):
         self.assertLess(time.monotonic() - started, 1)
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_DNS(DNSTest):
     def setUp(self) -> None:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -282,7 +286,7 @@ class TestNoEventThreadDNS(DNSTest):
             super().setUp()
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_QueryTxtChaos(TestQueryTxtChaos):
     """Test DNS queries with CHAOS class using uvloop."""
 
@@ -294,7 +298,7 @@ class TestUV_QueryTxtChaos(TestQueryTxtChaos):
         self.resolver.nameservers = ['1.1.1.1']
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_QueryTimeout(TestQueryTimeout):
     """Test DNS queries with timeout configuration using uvloop."""
 
