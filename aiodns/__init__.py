@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Literal,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
     overload,
@@ -56,14 +57,76 @@ query_class_map = {
     'ANY': pycares.QUERY_CLASS_ANY,
 }
 
+if sys.version_info >= (3, 11):
+    from typing import NotRequired, Unpack
+
+    class DNSResolverKwargs(TypedDict):
+        flags: NotRequired[int]
+        timeout: NotRequired[float]
+        tries: NotRequired[int]
+        ndots: NotRequired[int]
+        tcp_port: NotRequired[int]
+        udp_port: NotRequired[int]
+        domains: NotRequired[Sequence[str]]
+        lookups: NotRequired[str]
+        socket_send_buffer_size: NotRequired[int]
+        socket_receive_buffer_size: NotRequired[int]
+        rotate: NotRequired[bool]
+        local_ip: NotRequired[str]
+        local_dev: NotRequired[str]
+        resolvconf_path: NotRequired[str]
+
 
 class DNSResolver:
+    @overload
+    def __init__(
+        self,
+        nameservers: Optional[Sequence[str]] = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            nameservers: Optional[Sequence[str]] = ...,
+            loop: Optional[asyncio.AbstractEventLoop] = ...,
+            **kwargs: Unpack[DNSResolverKwargs],
+        ) -> None: ...
+
+        # Reserve backwards compatability for older versions
+        # of Python
+    else:
+
+        @overload
+        def __init__(
+            self,
+            nameservers: Optional[Sequence[str]] = ...,
+            loop: Optional[asyncio.AbstractEventLoop] = ...,
+            *,
+            flags: Optional[int] = None,
+            timeout: Optional[float] = None,
+            tries: Optional[int] = None,
+            ndots: Optional[int] = None,
+            tcp_port: Optional[int] = None,
+            udp_port: Optional[int] = None,
+            domains: Optional[Sequence[str]] = None,
+            lookups: Optional[str] = None,
+            socket_send_buffer_size: Optional[int] = None,
+            socket_receive_buffer_size: Optional[int] = None,
+            rotate: bool = False,
+            local_ip: Optional[str] = None,
+            local_dev: Optional[str] = None,
+            resolvconf_path: Optional[str] = None,
+        ) -> None: ...
+
     def __init__(
         self,
         nameservers: Optional[Sequence[str]] = None,
         loop: Optional[asyncio.AbstractEventLoop] = None,
         **kwargs: Any,
-    ) -> None:  # TODO(PY311): Use Unpack for kwargs.
+    ) -> None:
         self._closed = True
         self.loop = loop or asyncio.get_event_loop()
         if TYPE_CHECKING:
@@ -142,7 +205,7 @@ class DNSResolver:
 
     def _get_future_callback(
         self,
-    ) -> tuple['asyncio.Future[_T]', Callable[[_T, int], None]]:
+    ) -> tuple[asyncio.Future[_T], Callable[[_T, int], None]]:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
         future: asyncio.Future[_T] = self.loop.create_future()
