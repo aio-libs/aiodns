@@ -174,28 +174,11 @@ class DNSResolver:
         else:
             fut.set_result(result)
 
-    def _query_callback(
-        self,
-        fut: asyncio.Future[QueryResult],
-        qtype: int,
-        result: pycares.DNSResult,
-        errorno: int | None,
-    ) -> None:
-        """Callback for query that converts results to compatible format."""
-        if fut.cancelled():
-            return
-        if errorno is not None:
-            fut.set_exception(
-                error.DNSError(errorno, pycares.errno.strerror(errorno))
-            )
-        else:
-            fut.set_result(convert_result(result, qtype))
-
     def _get_future_callback(
         self,
-    ) -> tuple[asyncio.Future[_T], Callable[[_T, int], None]]:
+    ) -> tuple[asyncio.Future[_T], Callable[[_T, int | None], None]]:
         """Return a future and a callback to set the result of the future."""
-        cb: Callable[[_T, int], None]
+        cb: Callable[[_T, int | None], None]
         future: asyncio.Future[_T] = self.loop.create_future()
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
@@ -206,6 +189,32 @@ class DNSResolver:
         else:
             cb = functools.partial(self._callback, future)
         return future, cb
+
+    def _get_query_future_callback(
+        self, qtype: int
+    ) -> tuple[asyncio.Future[QueryResult], Callable[..., None]]:
+        """Return a future and callback for query with result conversion."""
+        future: asyncio.Future[QueryResult] = self.loop.create_future()
+
+        def do_callback(
+            result: pycares.DNSResult, errorno: int | None
+        ) -> None:
+            if future.cancelled():
+                return
+            if errorno is not None:
+                future.set_exception(
+                    error.DNSError(errorno, pycares.errno.strerror(errorno))
+                )
+            else:
+                future.set_result(convert_result(result, qtype))
+
+        if self._event_thread:
+
+            def cb(result: pycares.DNSResult, errorno: int | None) -> None:
+                self.loop.call_soon_threadsafe(do_callback, result, errorno)
+
+            return future, cb
+        return future, do_callback
 
     @overload
     def query(
@@ -266,16 +275,7 @@ class DNSResolver:
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut: asyncio.Future[QueryResult] = self.loop.create_future()
-        if self._event_thread:
-            cb = functools.partial(
-                self.loop.call_soon_threadsafe,
-                self._query_callback,
-                fut,
-                qtype_int,
-            )
-        else:
-            cb = functools.partial(self._query_callback, fut, qtype_int)
+        fut, cb = self._get_query_future_callback(qtype_int)
         if qclass_int is not None:
             self._channel.query(
                 host, qtype_int, query_class=qclass_int, callback=cb

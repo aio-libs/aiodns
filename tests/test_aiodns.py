@@ -386,8 +386,15 @@ def test_win32_import_winloop_error() -> None:
             raise ModuleNotFoundError("No module named 'winloop'")
         return original_import(name, *args, **kwargs)
 
-    # Patch the Channel class to avoid creating real network resources
+    # Patch the Channel class to:
+    # 1. First call (event_thread) raises AresError to trigger fallback
+    # 2. Second call (sock_state_cb) would succeed but we should hit
+    #    RuntimeError before that
     mock_channel = unittest.mock.MagicMock()
+    channel_side_effect = [
+        pycares.AresError(1, 'mock error'),  # First call fails
+        mock_channel,  # Second call would succeed
+    ]
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
@@ -395,9 +402,8 @@ def test_win32_import_winloop_error() -> None:
         unittest.mock.patch(
             'importlib.import_module', side_effect=mock_import
         ),
-        # Also patch Channel creation to avoid socket resource leak
         unittest.mock.patch(
-            'aiodns.pycares.Channel', return_value=mock_channel
+            'aiodns.pycares.Channel', side_effect=channel_side_effect
         ),
         pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
     ):
@@ -427,8 +433,15 @@ def test_win32_winloop_not_loop_instance() -> None:
             return mock_winloop_module
         return original_import(name, *args, **kwargs)
 
-    # Patch the Channel class to avoid creating real network resources
+    # Patch the Channel class to:
+    # 1. First call (event_thread) raises AresError to trigger fallback
+    # 2. Second call (sock_state_cb) would succeed but we should hit
+    #    RuntimeError before that
     mock_channel = unittest.mock.MagicMock()
+    channel_side_effect = [
+        pycares.AresError(1, 'mock error'),  # First call fails
+        mock_channel,  # Second call would succeed
+    ]
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
@@ -436,9 +449,8 @@ def test_win32_winloop_not_loop_instance() -> None:
         unittest.mock.patch(
             'importlib.import_module', side_effect=mock_import
         ),
-        # Also patch Channel creation to avoid socket resource leak
         unittest.mock.patch(
-            'aiodns.pycares.Channel', return_value=mock_channel
+            'aiodns.pycares.Channel', side_effect=channel_side_effect
         ),
         pytest.raises(RuntimeError, match=aiodns.WINDOWS_SELECTOR_ERR_MSG),
     ):
