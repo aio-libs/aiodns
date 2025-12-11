@@ -186,7 +186,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, aiodns.AresHostResult)
-        self.assertTrue(len(result.addresses) > 0)
+        self.assertGreater(len(result.addresses), 0)
 
     def test_getaddrinfo_address_family_0(self) -> None:
         f = self.resolver.getaddrinfo('google.com')
@@ -232,7 +232,7 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.gethostbyname('ipv6.google.com', socket.AF_INET6)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertTrue(len(result.addresses) > 0)
+        self.assertGreater(len(result.addresses), 0)
 
     def test_gethostbyname_bad_family(self) -> None:
         f = self.resolver.gethostbyname('ipv6.google.com', -1)  # type: ignore[arg-type]
