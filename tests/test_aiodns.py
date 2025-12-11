@@ -1023,5 +1023,114 @@ def test_nameservers_property_getter() -> None:
     loop.close()
 
 
+def test_getaddrinfo_with_sock_state_cb_fallback() -> None:
+    """Test getaddrinfo with sock_state_cb fallback.
+
+    This covers the non-event_thread callback path in _get_future_callback.
+    """
+    loop = asyncio.SelectorEventLoop()
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # First call (event_thread) fails
+            raise pycares.AresError(1, 'Simulated failure')
+        # Second call (sock_state_cb) succeeds with real channel
+        return original_channel(*args, **kwargs)
+
+    async def run_test() -> None:
+        with unittest.mock.patch(
+            'aiodns.pycares.Channel', side_effect=patched_channel
+        ):
+            resolver = aiodns.DNSResolver(loop=loop, timeout=5.0)
+            resolver.nameservers = ['8.8.8.8']
+
+            # Verify we're using the fallback path
+            assert resolver._event_thread is False
+
+            # Call getaddrinfo - this uses _get_future_callback
+            # which exercises line 190 (non-event_thread cb path)
+            result = await resolver.getaddrinfo(
+                'google.com', family=socket.AF_INET
+            )
+
+            # Query should succeed
+            assert result is not None
+            assert result.nodes
+
+            await resolver.close()
+
+    try:
+        loop.run_until_complete(run_test())
+    finally:
+        loop.close()
+
+
+@pytest.mark.asyncio
+async def test_callback_cancelled_future() -> None:
+    """Test _callback handles cancelled future."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[str] = asyncio.get_event_loop().create_future()
+    fut.cancel()
+
+    # Directly call _callback with cancelled future - should return early
+    resolver._callback(fut, 'result', None)
+
+    # Also test with errorno - should still return early
+    resolver._callback(fut, None, 1)
+
+    resolver._closed = True
+
+
+@pytest.mark.asyncio
+async def test_callback_error() -> None:
+    """Test _callback handles error."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[str] = asyncio.get_event_loop().create_future()
+
+    # Call _callback with an error
+    resolver._callback(fut, None, pycares.errno.ARES_ENOTFOUND)
+
+    # Future should have exception set
+    with pytest.raises(aiodns.error.DNSError):
+        fut.result()
+
+    resolver._closed = True
+
+
+@pytest.mark.asyncio
+async def test_query_callback_cancelled_future() -> None:
+    """Test _query_callback handles cancelled future."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[Any] = asyncio.get_event_loop().create_future()
+    fut.cancel()
+
+    # Directly call _query_callback with cancelled future - should return early
+    resolver._query_callback(fut, pycares.QUERY_TYPE_A, None, None)  # type: ignore[arg-type]
+
+    resolver._closed = True
+
+
+@pytest.mark.asyncio
+async def test_query_callback_error() -> None:
+    """Test _query_callback handles error."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[Any] = asyncio.get_event_loop().create_future()
+
+    # Call _query_callback with an error
+    resolver._query_callback(
+        fut, pycares.QUERY_TYPE_A, None, pycares.errno.ARES_ENOTFOUND
+    )  # type: ignore[arg-type]
+
+    # Future should have exception set
+    with pytest.raises(aiodns.error.DNSError):
+        fut.result()
+
+    resolver._closed = True
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)
