@@ -95,26 +95,27 @@ class DNSResolver:
         # Reserve backwards compatability for older versions
         # of Python
     else:
+
         @overload
         def __init__(
-                self,
-                nameservers: Sequence[str] | None = ...,
-                loop: asyncio.AbstractEventLoop | None = ...,
-                *,
-                flags: int | None = None,
-                timeout: float | None = None,
-                tries: int | None = None,
-                ndots: int | None = None,
-                tcp_port: int | None = None,
-                udp_port: int | None = None,
-                domains: Sequence[str] | None = None,
-                lookups: str | None = None,
-                socket_send_buffer_size: int | None = None,
-                socket_receive_buffer_size: int | None = None,
-                rotate: bool = False,
-                local_ip: str | None = None,
-                local_dev: str | None = None,
-                resolvconf_path: str | None = None,
+            self,
+            nameservers: Sequence[str] | None = ...,
+            loop: asyncio.AbstractEventLoop | None = ...,
+            *,
+            flags: int | None = None,
+            timeout: float | None = None,
+            tries: int | None = None,
+            ndots: int | None = None,
+            tcp_port: int | None = None,
+            udp_port: int | None = None,
+            domains: Sequence[str] | None = None,
+            lookups: str | None = None,
+            socket_send_buffer_size: int | None = None,
+            socket_receive_buffer_size: int | None = None,
+            rotate: bool = False,
+            local_ip: str | None = None,
+            local_dev: str | None = None,
+            resolvconf_path: str | None = None,
         ) -> None: ...
 
     def __init__(
