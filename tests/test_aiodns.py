@@ -9,7 +9,7 @@ import sys
 import time
 import unittest
 import unittest.mock
-from typing import Any
+from typing import Any, cast
 
 import pycares
 import pytest
@@ -1080,7 +1080,8 @@ async def test_callback_cancelled_future() -> None:
     resolver._callback(fut, 'result', None)
 
     # Also test with errorno - should still return early
-    resolver._callback(fut, None, 1)
+    # Pass empty string as result (ignored when errorno is set)
+    resolver._callback(fut, '', 1)
 
     resolver._closed = True
 
@@ -1092,7 +1093,8 @@ async def test_callback_error() -> None:
     fut: asyncio.Future[str] = asyncio.get_event_loop().create_future()
 
     # Call _callback with an error
-    resolver._callback(fut, None, pycares.errno.ARES_ENOTFOUND)
+    # Pass empty string as result (ignored when errorno is set)
+    resolver._callback(fut, '', pycares.errno.ARES_ENOTFOUND)
 
     # Future should have exception set
     with pytest.raises(aiodns.error.DNSError):
@@ -1109,7 +1111,10 @@ async def test_query_callback_cancelled_future() -> None:
     fut.cancel()
 
     # Directly call _query_callback with cancelled future - should return early
-    resolver._query_callback(fut, pycares.QUERY_TYPE_A, None, None)  # type: ignore[arg-type]
+    # Cast None to DNSResult since the result is not used when cancelled
+    resolver._query_callback(
+        fut, pycares.QUERY_TYPE_A, cast(pycares.DNSResult, None), None
+    )
 
     resolver._closed = True
 
@@ -1121,9 +1126,13 @@ async def test_query_callback_error() -> None:
     fut: asyncio.Future[Any] = asyncio.get_event_loop().create_future()
 
     # Call _query_callback with an error
+    # Cast None to DNSResult since the result is not used when errorno is set
     resolver._query_callback(
-        fut, pycares.QUERY_TYPE_A, None, pycares.errno.ARES_ENOTFOUND
-    )  # type: ignore[arg-type]
+        fut,
+        pycares.QUERY_TYPE_A,
+        cast(pycares.DNSResult, None),
+        pycares.errno.ARES_ENOTFOUND,
+    )
 
     # Future should have exception set
     with pytest.raises(aiodns.error.DNSError):
