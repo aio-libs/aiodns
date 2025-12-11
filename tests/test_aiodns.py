@@ -841,5 +841,45 @@ async def test_temporary_resolver_not_garbage_collected() -> None:
     assert isinstance(result[0], aiodns.AresQueryAResult)
 
 
+@pytest.mark.asyncio
+async def test_sock_state_cb_fallback_with_real_query() -> None:
+    """Test that sock_state_cb fallback path works for actual DNS queries.
+
+    This test forces the event_thread channel creation to fail, triggering
+    the sock_state_cb fallback, then performs a real DNS query to verify
+    the fallback path works correctly.
+    """
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # First call (event_thread) fails
+            raise pycares.AresError(1, 'Simulated failure')
+        # Second call (sock_state_cb) succeeds with real channel
+        return original_channel(*args, **kwargs)
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(timeout=5.0)
+        resolver.nameservers = ['8.8.8.8']
+
+        # Verify we're using the fallback path
+        assert resolver._event_thread is False
+
+        # Perform a real DNS query through the sock_state_cb path
+        result = await resolver.query('google.com', 'A')
+
+        # Query should succeed
+        assert result
+        assert len(result) > 0
+        assert isinstance(result[0], aiodns.AresQueryAResult)
+
+        await resolver.close()
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)
