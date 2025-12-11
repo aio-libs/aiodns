@@ -128,6 +128,22 @@ class AresHostResult:
     addresses: list[str]
 
 
+# Type alias for a single converted record
+ConvertedRecord = Union[
+    AresQueryAResult,
+    AresQueryAAAAResult,
+    AresQueryCNAMEResult,
+    AresQueryMXResult,
+    AresQueryNSResult,
+    AresQueryTXTResult,
+    AresQuerySOAResult,
+    AresQuerySRVResult,
+    AresQueryNAPTRResult,
+    AresQueryCAAResult,
+    AresQueryPTRResult,
+    pycares.DNSRecord,  # Unknown types returned as-is
+]
+
 # Type alias for query results
 QueryResult = Union[
     list[AresQueryAResult],
@@ -141,11 +157,11 @@ QueryResult = Union[
     list[AresQueryNAPTRResult],
     list[AresQueryCAAResult],
     list[AresQueryPTRResult],
-    pycares.DNSResult,  # For ANY query type
+    list[ConvertedRecord],  # For ANY query type
 ]
 
 
-def _convert_record(record: Any) -> Any:
+def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
     """Convert a single DNS record to pycares 4.x compatible format."""
     data = record.data
     ttl = record.ttl
