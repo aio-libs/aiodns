@@ -8,7 +8,7 @@ to maintain backward compatibility with existing code.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Union
 
 import pycares
 
@@ -245,7 +245,7 @@ def convert_result(dns_result: pycares.DNSResult, qtype: int) -> QueryResult:
     if qtype == pycares.QUERY_TYPE_ANY:
         return [_convert_record(record) for record in dns_result.answer]
 
-    results: list[Any] = []
+    results: list[ConvertedRecord] = []
 
     for record in dns_result.answer:
         record_type = record.type
