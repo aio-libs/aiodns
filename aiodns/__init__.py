@@ -269,9 +269,9 @@ class DNSResolver:
         self, host: str, qtype: Literal['TXT'], qclass: str | None = ...
     ) -> asyncio.Future[list[AresQueryTXTResult]]: ...
 
-    def query(  # type: ignore[misc]
+    def query(
         self, host: str, qtype: str, qclass: str | None = None
-    ) -> asyncio.Future[QueryResult]:
+    ) -> asyncio.Future[list[Any]] | asyncio.Future[Any]:
         try:
             qtype_int = query_type_map[qtype]
         except KeyError as e:
