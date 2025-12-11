@@ -1087,6 +1087,21 @@ async def test_query_deprecation_warning() -> None:
     await resolver.close()
 
 
+@pytest.mark.asyncio
+@pytest.mark.skipif(sys.platform == 'win32', reason='CHAOS class unreliable')
+async def test_query_dns_with_qclass() -> None:
+    """Test query_dns with qclass parameter."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    resolver.nameservers = ['1.1.1.1']
+
+    result = await resolver.query_dns('id.server', 'TXT', 'CHAOS')
+
+    assert isinstance(result, pycares.DNSResult)
+    assert len(result.answer) > 0
+
+    await resolver.close()
+
+
 def test_getaddrinfo_with_sock_state_cb_fallback() -> None:
     """Test getaddrinfo with sock_state_cb fallback.
 
