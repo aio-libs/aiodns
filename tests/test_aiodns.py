@@ -28,14 +28,24 @@ try:
 except ModuleNotFoundError:
     skip_uvloop = True
 
+# Skip uvloop tests on Python 3.14+ due to EventLoopPolicy deprecation
+if sys.version_info >= (3, 14):
+    skip_uvloop = True
+
 
 class DNSTest(unittest.TestCase):
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                # Policy deprecated in 3.14, create SelectorEventLoop directly
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(
             loop=self.loop, timeout=5.0
@@ -219,10 +229,15 @@ class TestQueryTxtChaos(DNSTest):
 
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(loop=self.loop)
         self.resolver.nameservers = ['1.1.1.1']
@@ -238,10 +253,15 @@ class TestQueryTimeout(unittest.TestCase):
 
     def setUp(self) -> None:
         if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(
-                asyncio.WindowsSelectorEventLoopPolicy()
-            )
-        self.loop = asyncio.new_event_loop()
+            if sys.version_info >= (3, 14):
+                self.loop = asyncio.SelectorEventLoop()
+            else:
+                asyncio.set_event_loop_policy(
+                    asyncio.WindowsSelectorEventLoopPolicy()
+                )
+                self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
         self.resolver = aiodns.DNSResolver(
             timeout=0.1, tries=1, loop=self.loop
@@ -264,7 +284,7 @@ class TestQueryTimeout(unittest.TestCase):
         self.assertLess(time.monotonic() - started, 1)
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_DNS(DNSTest):
     def setUp(self) -> None:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -284,7 +304,7 @@ class TestNoEventThreadDNS(DNSTest):
             super().setUp()
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_QueryTxtChaos(TestQueryTxtChaos):
     """Test DNS queries with CHAOS class using uvloop."""
 
@@ -296,7 +316,7 @@ class TestUV_QueryTxtChaos(TestQueryTxtChaos):
         self.resolver.nameservers = ['1.1.1.1']
 
 
-@unittest.skipIf(skip_uvloop, "We don't have a uvloop or winloop module")
+@unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_QueryTimeout(TestQueryTimeout):
     """Test DNS queries with timeout configuration using uvloop."""
 
@@ -573,7 +593,9 @@ def test_win32_winloop_loop_instance() -> None:
 @pytest.mark.asyncio
 async def test_close_resolver() -> None:
     """Test that DNSResolver.close() properly shuts down the resolver."""
+    # Use a non-routable IP to ensure the query doesn't complete before close
     resolver = aiodns.DNSResolver()
+    resolver.nameservers = ['192.0.2.1']  # TEST-NET-1, non-routable
 
     # Create a query to ensure resolver is active
     query_future = resolver.query('google.com', 'A')
@@ -801,6 +823,32 @@ async def test_context_manager_close_idempotent() -> None:
 
     # Context manager should call close again, but it should be idempotent
     assert close_count == 2
+
+
+@pytest.mark.asyncio
+async def test_temporary_resolver_not_garbage_collected() -> None:
+    """Test temporary resolver is not garbage collected before query completes.
+
+    Regression test for https://github.com/aio-libs/aiodns/issues/209
+
+    When calling query() on a temporary resolver (not stored in a variable),
+    the resolver should not be garbage collected before the query completes.
+    Previously, the callback was a @staticmethod which didn't hold a reference
+    to self, causing the resolver to be garbage collected and the query
+    cancelled.
+    """
+    # Force garbage collection to ensure any weak references are cleared
+    gc.collect()
+
+    # This pattern previously failed with DNSError(24, 'DNS query cancelled')
+    # because the resolver was garbage collected before the query completed
+    result = await aiodns.DNSResolver(nameservers=['8.8.8.8']).query(
+        'google.com', 'A'
+    )
+
+    # Query should succeed
+    assert result
+    assert len(result) > 0
 
 
 if __name__ == '__main__':  # pragma: no cover

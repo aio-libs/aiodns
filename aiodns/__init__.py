@@ -21,7 +21,7 @@ import pycares
 
 from . import error
 
-__version__ = '3.5.0'
+__version__ = '3.6.1'
 
 __all__ = ('DNSResolver', 'error')
 
@@ -191,9 +191,8 @@ class DNSResolver:
     def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
         self._channel.servers = value
 
-    @staticmethod
     def _callback(
-        fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
+        self, fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
     ) -> None:
         if fut.cancelled():
             return
