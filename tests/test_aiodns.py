@@ -897,5 +897,103 @@ async def test_sock_state_cb_fallback_with_real_query() -> None:
         await resolver.close()
 
 
+@pytest.mark.asyncio
+async def test_gethostbyname_cancelled_future() -> None:
+    """Test _gethostbyname_callback handles cancelled future."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    resolver.nameservers = ['192.0.2.1']  # Non-routable
+
+    # Start a query
+    fut = resolver.gethostbyname('example.com', socket.AF_INET)
+
+    # Cancel the future
+    fut.cancel()
+
+    # Manually invoke the callback with a cancelled future
+    # This should not raise and should return early
+    resolver._gethostbyname_callback(fut, 'example.com', None, None)
+
+    await resolver.close()
+
+
+@pytest.mark.asyncio
+async def test_gethostbyname_with_sock_state_cb_fallback() -> None:
+    """Test gethostbyname works with sock_state_cb fallback path."""
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # First call (event_thread) fails
+            raise pycares.AresError(1, 'Simulated failure')
+        # Second call (sock_state_cb) succeeds with real channel
+        return original_channel(*args, **kwargs)
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(timeout=5.0)
+        resolver.nameservers = ['8.8.8.8']
+
+        # Verify we're using the fallback path
+        assert resolver._event_thread is False
+
+        # Perform gethostbyname through the sock_state_cb path
+        result = await resolver.gethostbyname('google.com', socket.AF_INET)
+
+        # Query should succeed
+        assert isinstance(result, aiodns.AresHostResult)
+        assert len(result.addresses) > 0
+
+        await resolver.close()
+
+
+def test_sock_state_cb_wrapper_with_dead_resolver() -> None:
+    """Test sock_state_cb_wrapper handles garbage collected resolver.
+
+    When the resolver is garbage collected but the callback is still
+    referenced by pycares, calling the callback should not raise an error.
+    The weak reference will return None and the callback should exit early.
+    """
+    call_count = 0
+    captured_callback: Any = None
+
+    def patched_channel(*args: Any, **kwargs: Any) -> Any:
+        nonlocal call_count, captured_callback
+        call_count += 1
+        if call_count == 1:
+            # First call (event_thread) fails
+            raise pycares.AresError(1, 'Simulated failure')
+        # Second call - capture the sock_state_cb and return a mock
+        captured_callback = kwargs.get('sock_state_cb')
+        return unittest.mock.MagicMock()
+
+    loop = asyncio.new_event_loop()
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(loop=loop, timeout=5.0)
+
+        # Verify we captured the callback and are using fallback path
+        assert resolver._event_thread is False
+        assert captured_callback is not None
+
+        # Mark as closed to prevent cleanup issues
+        resolver._closed = True
+
+    # Delete resolver and force garbage collection
+    del resolver
+    gc.collect()
+
+    # Call the captured callback - should not raise since weak ref returns None
+    # This exercises the "if this is not None:" branch when this IS None
+    captured_callback(5, True, False)  # fd=5, readable=True, writable=False
+
+    loop.close()
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)
