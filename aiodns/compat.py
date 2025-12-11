@@ -8,7 +8,7 @@ to maintain backward compatibility with existing code.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, cast
 
 import pycares
 
@@ -163,80 +163,76 @@ QueryResult = Union[
 
 def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
     """Convert a single DNS record to pycares 4.x compatible format."""
-    data = record.data
     ttl = record.ttl
     record_type = record.type
 
     if record_type == pycares.QUERY_TYPE_A:
-        return AresQueryAResult(host=data.addr, ttl=ttl)
-    elif record_type == pycares.QUERY_TYPE_AAAA:
-        return AresQueryAAAAResult(host=data.addr, ttl=ttl)
-    elif record_type == pycares.QUERY_TYPE_CNAME:
-        return AresQueryCNAMEResult(cname=data.cname, ttl=ttl)
-    elif record_type == pycares.QUERY_TYPE_MX:
+        a_data = cast(pycares.ARecordData, record.data)
+        return AresQueryAResult(host=a_data.addr, ttl=ttl)
+    if record_type == pycares.QUERY_TYPE_AAAA:
+        aaaa_data = cast(pycares.AAAARecordData, record.data)
+        return AresQueryAAAAResult(host=aaaa_data.addr, ttl=ttl)
+    if record_type == pycares.QUERY_TYPE_CNAME:
+        cname_data = cast(pycares.CNAMERecordData, record.data)
+        return AresQueryCNAMEResult(cname=cname_data.cname, ttl=ttl)
+    if record_type == pycares.QUERY_TYPE_MX:
+        mx_data = cast(pycares.MXRecordData, record.data)
         return AresQueryMXResult(
-            host=data.exchange, priority=data.priority, ttl=ttl
+            host=mx_data.exchange, priority=mx_data.priority, ttl=ttl
         )
-    elif record_type == pycares.QUERY_TYPE_NS:
-        # pycares 5: nsdname -> host
-        return AresQueryNSResult(host=data.nsdname, ttl=ttl)
-    elif record_type == pycares.QUERY_TYPE_TXT:
-        # pycares 5: data -> text
-        return AresQueryTXTResult(text=data.data, ttl=ttl)
-    elif record_type == pycares.QUERY_TYPE_SOA:
-        # pycares 5 renames: mname->nsname, rname->hostmaster, etc.
+    if record_type == pycares.QUERY_TYPE_NS:
+        ns_data = cast(pycares.NSRecordData, record.data)
+        return AresQueryNSResult(host=ns_data.nsdname, ttl=ttl)
+    if record_type == pycares.QUERY_TYPE_TXT:
+        txt_data = cast(pycares.TXTRecordData, record.data)
+        return AresQueryTXTResult(text=txt_data.data, ttl=ttl)
+    if record_type == pycares.QUERY_TYPE_SOA:
+        soa_data = cast(pycares.SOARecordData, record.data)
         return AresQuerySOAResult(
-            nsname=data.mname,
-            hostmaster=data.rname,
-            serial=data.serial,
-            refresh=data.refresh,
-            retry=data.retry,
-            expires=data.expire,
-            minttl=data.minimum,
+            nsname=soa_data.mname,
+            hostmaster=soa_data.rname,
+            serial=soa_data.serial,
+            refresh=soa_data.refresh,
+            retry=soa_data.retry,
+            expires=soa_data.expire,
+            minttl=soa_data.minimum,
             ttl=ttl,
         )
-    elif record_type == pycares.QUERY_TYPE_SRV:
-        # pycares 5: target -> host
+    if record_type == pycares.QUERY_TYPE_SRV:
+        srv_data = cast(pycares.SRVRecordData, record.data)
         return AresQuerySRVResult(
-            host=data.target,
-            port=data.port,
-            priority=data.priority,
-            weight=data.weight,
+            host=srv_data.target,
+            port=srv_data.port,
+            priority=srv_data.priority,
+            weight=srv_data.weight,
             ttl=ttl,
         )
-    elif record_type == pycares.QUERY_TYPE_NAPTR:
-        # pycares 5: flags/service/regexp are strings, encode to bytes
+    if record_type == pycares.QUERY_TYPE_NAPTR:
+        naptr_data = cast(pycares.NAPTRRecordData, record.data)
         return AresQueryNAPTRResult(
-            order=data.order,
-            preference=data.preference,
-            flags=data.flags.encode()
-            if isinstance(data.flags, str)
-            else data.flags,
-            service=data.service.encode()
-            if isinstance(data.service, str)
-            else data.service,
-            regex=data.regexp.encode()
-            if isinstance(data.regexp, str)
-            else data.regexp,
-            replacement=data.replacement,
+            order=naptr_data.order,
+            preference=naptr_data.preference,
+            flags=naptr_data.flags.encode(),
+            service=naptr_data.service.encode(),
+            regex=naptr_data.regexp.encode(),
+            replacement=naptr_data.replacement,
             ttl=ttl,
         )
-    elif record_type == pycares.QUERY_TYPE_CAA:
-        # pycares 5: tag -> property, value is str (encode to bytes for compat)
+    if record_type == pycares.QUERY_TYPE_CAA:
+        caa_data = cast(pycares.CAARecordData, record.data)
         return AresQueryCAAResult(
-            critical=data.critical,
-            property=data.tag,
-            value=data.value.encode()
-            if isinstance(data.value, str)
-            else data.value,
+            critical=caa_data.critical,
+            property=caa_data.tag,
+            value=caa_data.value.encode()
+            if isinstance(caa_data.value, str)
+            else caa_data.value,
             ttl=ttl,
         )
-    elif record_type == pycares.QUERY_TYPE_PTR:
-        # pycares 5: dname -> name, aliases not available in pycares 5
-        return AresQueryPTRResult(name=data.dname, ttl=ttl, aliases=[])
-    else:
-        # Return raw record for unknown types
-        return record
+    if record_type == pycares.QUERY_TYPE_PTR:
+        ptr_data = cast(pycares.PTRRecordData, record.data)
+        return AresQueryPTRResult(name=ptr_data.dname, ttl=ttl, aliases=[])
+    # Return raw record for unknown types
+    return record
 
 
 def convert_result(dns_result: pycares.DNSResult, qtype: int) -> QueryResult:
