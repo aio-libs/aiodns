@@ -156,7 +156,9 @@ class DNSResolver:
 
     @property
     def nameservers(self) -> Sequence[str]:
-        return self._channel.servers
+        # pycares 5.x returns servers with port (e.g., '8.8.8.8:53')
+        # Strip port for backward compatibility with pycares 4.x
+        return [s.rsplit(':', 1)[0] for s in self._channel.servers]
 
     @nameservers.setter
     def nameservers(self, value: Iterable[str | bytes]) -> None:

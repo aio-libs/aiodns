@@ -1016,8 +1016,28 @@ def test_nameservers_property_getter() -> None:
     # Get nameservers through the property (covers _channel.servers getter)
     servers = resolver.nameservers
 
-    # Should return a list (might be empty or have system defaults)
+    # Should return a sequence (might be empty or have system defaults)
     assert isinstance(servers, (list, tuple))
+
+    resolver._closed = True
+    loop.close()
+
+
+def test_nameservers_strips_port() -> None:
+    """Test that nameservers getter strips port suffix."""
+    loop = asyncio.new_event_loop()
+    resolver = aiodns.DNSResolver(loop=loop, timeout=5.0)
+
+    # Set nameservers - pycares 5.x will store them with :53 suffix
+    resolver.nameservers = ['8.8.8.8', '8.8.4.4']
+
+    # Getter should return without port suffix for backward compatibility
+    servers = resolver.nameservers
+    assert servers == ['8.8.8.8', '8.8.4.4']
+
+    # Verify no port suffix in any server
+    for server in servers:
+        assert ':' not in server
 
     resolver._closed = True
     loop.close()
