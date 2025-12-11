@@ -3,6 +3,7 @@
 import asyncio
 import gc
 import ipaddress
+import logging
 import socket
 import sys
 import time
@@ -10,6 +11,7 @@ import unittest
 import unittest.mock
 from typing import Any
 
+import pycares
 import pytest
 
 import aiodns
@@ -484,6 +486,94 @@ def test_win32_winloop_loop_instance() -> None:
         # This should not raise an exception since loop
         # is a winloop.Loop instance
         aiodns.DNSResolver(loop=mock_loop)
+
+
+@pytest.mark.parametrize(
+    ('platform', 'expected_msg_parts', 'unexpected_msg_parts'),
+    [
+        (
+            'linux',
+            [
+                'automatic monitoring of',
+                'resolver configuration changes',
+                'system ran out of inotify watches',
+                'Falling back to socket state callback',
+                'Consider increasing the system inotify watch limit',
+            ],
+            [],
+        ),
+        (
+            'darwin',
+            [
+                'automatic monitoring',
+                'resolver configuration changes',
+                'Falling back to socket state callback',
+            ],
+            [
+                'system ran out of inotify watches',
+                'Consider increasing the system inotify watch limit',
+            ],
+        ),
+        (
+            'win32',
+            [
+                'automatic monitoring',
+                'resolver configuration changes',
+                'Falling back to socket state callback',
+            ],
+            [
+                'system ran out of inotify watches',
+                'Consider increasing the system inotify watch limit',
+            ],
+        ),
+    ],
+)
+async def test_make_channel_ares_error(
+    platform: str,
+    expected_msg_parts: list[str],
+    unexpected_msg_parts: list[str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test exception handling in _make_channel on different platforms."""
+    # Set log level to capture warnings
+    caplog.set_level(logging.WARNING)
+
+    # Create a mock loop that is a SelectorEventLoop to
+    # avoid Windows-specific errors
+    mock_loop = unittest.mock.MagicMock(spec=asyncio.SelectorEventLoop)
+    mock_channel = unittest.mock.MagicMock()
+
+    with (
+        unittest.mock.patch('sys.platform', platform),
+        # Configure first Channel call to raise AresError,
+        # second call to return our mock
+        unittest.mock.patch(
+            'aiodns.pycares.Channel',
+            side_effect=[
+                pycares.AresError('Mock error'),
+                mock_channel,
+            ],
+        ),
+        # Also patch asyncio.get_event_loop to return our mock loop
+        unittest.mock.patch('asyncio.get_event_loop', return_value=mock_loop),
+    ):
+        # Create resolver which will call _make_channel
+        resolver = aiodns.DNSResolver(loop=mock_loop)
+
+        # Check that event_thread is False due to fallback
+        assert resolver._event_thread is False
+
+        # Check expected message parts in the captured log
+        for part in expected_msg_parts:
+            assert part in caplog.text
+
+        # Check unexpected message parts aren't in the captured log
+        for part in unexpected_msg_parts:
+            assert part not in caplog.text
+
+        # Manually set _closed to True to prevent cleanup logic from
+        # running during the test.
+        resolver._closed = True
 
 
 @pytest.mark.asyncio

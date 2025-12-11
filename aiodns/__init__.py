@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import logging
 import socket
 import sys
 import weakref
@@ -56,6 +57,8 @@ WINDOWS_SELECTOR_ERR_MSG = (
     'https://github.com/aio-libs/aiodns#note-for-windows-users'
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 query_type_map = {
     'A': pycares.QUERY_TYPE_A,
     'AAAA': pycares.QUERY_TYPE_AAAA,
@@ -94,7 +97,7 @@ class DNSResolver:
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
         self._timeout = timeout
-        self._channel = self._make_channel(**kwargs)
+        self._event_thread, self._channel = self._make_channel(**kwargs)
         if nameservers:
             self.nameservers = nameservers
         self._read_fds: set[int] = set()
@@ -102,7 +105,29 @@ class DNSResolver:
         self._timer: asyncio.TimerHandle | None = None
         self._closed = False
 
-    def _make_channel(self, **kwargs: Any) -> pycares.Channel:
+    def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
+        # pycares 5+ uses event_thread by default when sock_state_cb
+        # is not provided
+        try:
+            return True, pycares.Channel(timeout=self._timeout, **kwargs)
+        except pycares.AresError as e:
+            if sys.platform == 'linux':
+                _LOGGER.warning(
+                    'Failed to create DNS resolver channel with automatic '
+                    'monitoring of resolver configuration changes. This '
+                    'usually means the system ran out of inotify watches. '
+                    'Falling back to socket state callback. Consider '
+                    'increasing the system inotify watch limit: %s',
+                    e,
+                )
+            else:
+                _LOGGER.warning(
+                    'Failed to create DNS resolver channel with automatic '
+                    'monitoring of resolver configuration changes. '
+                    'Falling back to socket state callback: %s',
+                    e,
+                )
+        # Fall back to sock_state_cb (needs SelectorEventLoop on Windows)
         if sys.platform == 'win32' and not isinstance(
             self.loop, asyncio.SelectorEventLoop
         ):
@@ -113,10 +138,7 @@ class DNSResolver:
                     raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
             except ModuleNotFoundError as ex:
                 raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
-        # Use a weak reference to avoid preventing garbage collection
-        # pycares Channel holds a reference to sock_state_cb which would
-        # otherwise create a reference cycle preventing __del__ from
-        # being called
+        # Use weak reference to avoid preventing garbage collection
         weak_self = weakref.ref(self)
 
         def sock_state_cb_wrapper(
@@ -126,7 +148,7 @@ class DNSResolver:
             if this is not None:
                 this._sock_state_cb(fd, readable, writable)
 
-        return pycares.Channel(
+        return False, pycares.Channel(
             sock_state_cb=sock_state_cb_wrapper,
             timeout=self._timeout,
             **kwargs,
@@ -175,7 +197,14 @@ class DNSResolver:
         """Return a future and a callback to set the result of the future."""
         cb: Callable[[_T, int], None]
         future: asyncio.Future[_T] = self.loop.create_future()
-        cb = functools.partial(self._callback, future)
+        if self._event_thread:
+            cb = functools.partial(  # type: ignore[assignment]
+                self.loop.call_soon_threadsafe,
+                self._callback,  # type: ignore[arg-type]
+                future,
+            )
+        else:
+            cb = functools.partial(self._callback, future)
         return future, cb
 
     @overload
@@ -238,7 +267,15 @@ class DNSResolver:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
         fut: asyncio.Future[QueryResult] = self.loop.create_future()
-        cb = functools.partial(self._query_callback, fut, qtype_int)
+        if self._event_thread:
+            cb = functools.partial(
+                self.loop.call_soon_threadsafe,
+                self._query_callback,
+                fut,
+                qtype_int,
+            )
+        else:
+            cb = functools.partial(self._query_callback, fut, qtype_int)
         if qclass_int is not None:
             self._channel.query(
                 host, qtype_int, query_class=qclass_int, callback=cb
@@ -258,7 +295,7 @@ class DNSResolver:
         """
         fut: asyncio.Future[AresHostResult] = self.loop.create_future()
 
-        def callback(
+        def _do_callback(
             result: pycares.AddrInfoResult | None, errorno: int | None
         ) -> None:
             if fut.cancelled():
@@ -269,12 +306,22 @@ class DNSResolver:
                 )
             else:
                 assert result is not None  # noqa: S101
-                addresses = [node.addr for node in result.nodes]
+                # node.addr is (address_bytes, port) - extract and decode
+                addresses = [node.addr[0].decode() for node in result.nodes]
                 # Get canonical name from cnames if available
                 name = result.cnames[0].name if result.cnames else host
                 fut.set_result(
                     AresHostResult(name=name, aliases=[], addresses=addresses)
                 )
+
+        if self._event_thread:
+
+            def callback(
+                result: pycares.AddrInfoResult | None, errorno: int | None
+            ) -> None:
+                self.loop.call_soon_threadsafe(_do_callback, result, errorno)
+        else:
+            callback = _do_callback
 
         self._channel.getaddrinfo(host, None, family=family, callback=callback)
         return fut
