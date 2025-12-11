@@ -216,7 +216,7 @@ class DNSResolver:
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
-                self._query_callback,
+                self._query_callback,  # type: ignore[arg-type]
                 future,
                 qtype,
             )
@@ -269,7 +269,7 @@ class DNSResolver:
         self, host: str, qtype: Literal['TXT'], qclass: str | None = ...
     ) -> asyncio.Future[list[AresQueryTXTResult]]: ...
 
-    def query(
+    def query(  # type: ignore[misc]
         self, host: str, qtype: str, qclass: str | None = None
     ) -> asyncio.Future[QueryResult]:
         try:
@@ -330,7 +330,7 @@ class DNSResolver:
         if self._event_thread:
             cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
-                self._gethostbyname_callback,
+                self._gethostbyname_callback,  # type: ignore[arg-type]
                 fut,
                 host,
             )

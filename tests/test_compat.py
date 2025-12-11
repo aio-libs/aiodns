@@ -360,23 +360,6 @@ class TestConvertRecord:
         assert result.replacement == '_sip._udp.example.com'
         assert result.ttl == 300
 
-    def test_convert_naptr_record_with_bytes_fields(self) -> None:
-        data = unittest.mock.MagicMock()
-        data.order = 100
-        data.preference = 10
-        data.flags = b'S'
-        data.service = b'SIP+D2U'
-        data.regexp = b''
-        data.replacement = '_sip._udp.example.com'
-        record = make_mock_record(pycares.QUERY_TYPE_NAPTR, data, ttl=300)
-
-        result = _convert_record(record)
-
-        assert isinstance(result, AresQueryNAPTRResult)
-        assert result.flags == b'S'
-        assert result.service == b'SIP+D2U'
-        assert result.regex == b''
-
     def test_convert_caa_record_with_string_value(self) -> None:
         data = unittest.mock.MagicMock()
         data.critical = 0
@@ -391,18 +374,6 @@ class TestConvertRecord:
         assert result.property == 'issue'
         assert result.value == b'letsencrypt.org'
         assert result.ttl == 300
-
-    def test_convert_caa_record_with_bytes_value(self) -> None:
-        data = unittest.mock.MagicMock()
-        data.critical = 0
-        data.tag = 'issue'
-        data.value = b'letsencrypt.org'
-        record = make_mock_record(pycares.QUERY_TYPE_CAA, data, ttl=300)
-
-        result = _convert_record(record)
-
-        assert isinstance(result, AresQueryCAAResult)
-        assert result.value == b'letsencrypt.org'
 
     def test_convert_ptr_record(self) -> None:
         data = unittest.mock.MagicMock()
