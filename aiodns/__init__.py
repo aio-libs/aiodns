@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import logging
@@ -404,7 +406,7 @@ class DNSResolver:
         """
         self._cleanup()
 
-    async def __aenter__(self) -> 'DNSResolver':
+    async def __aenter__(self) -> DNSResolver:
         """Enter the async context manager."""
         return self
 
