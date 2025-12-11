@@ -4,6 +4,7 @@ import asyncio
 import functools
 import socket
 import sys
+import weakref
 from collections.abc import Callable, Iterable, Sequence
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
@@ -112,8 +113,23 @@ class DNSResolver:
                     raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
             except ModuleNotFoundError as ex:
                 raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
+        # Use a weak reference to avoid preventing garbage collection
+        # pycares Channel holds a reference to sock_state_cb which would
+        # otherwise create a reference cycle preventing __del__ from
+        # being called
+        weak_self = weakref.ref(self)
+
+        def sock_state_cb_wrapper(
+            fd: int, readable: bool, writable: bool
+        ) -> None:
+            this = weak_self()
+            if this is not None:
+                this._sock_state_cb(fd, readable, writable)
+
         return pycares.Channel(
-            sock_state_cb=self._sock_state_cb, timeout=self._timeout, **kwargs
+            sock_state_cb=sock_state_cb_wrapper,
+            timeout=self._timeout,
+            **kwargs,
         )
 
     @property
@@ -382,6 +398,8 @@ class DNSResolver:
         This should be called to ensure all resources are properly released.
         After calling close(), the resolver should not be used again.
         """
+        if not self._closed:
+            self._channel.cancel()
         self._cleanup()
 
     async def __aenter__(self) -> DNSResolver:
