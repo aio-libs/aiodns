@@ -3,17 +3,14 @@ import functools
 import logging
 import socket
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
-    Optional,
     TypedDict,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -81,8 +78,8 @@ class DNSResolver:
     @overload
     def __init__(
         self,
-        nameservers: Optional[Sequence[str]] = None,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        nameservers: Sequence[str] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None: ...
 
     if sys.version_info >= (3, 11):
@@ -90,41 +87,40 @@ class DNSResolver:
         @overload
         def __init__(
             self,
-            nameservers: Optional[Sequence[str]] = ...,
-            loop: Optional[asyncio.AbstractEventLoop] = ...,
+            nameservers: Sequence[str] | None = ...,
+            loop: asyncio.AbstractEventLoop | None = ...,
             **kwargs: Unpack[DNSResolverKwargs],
         ) -> None: ...
 
         # Reserve backwards compatability for older versions
         # of Python
     else:
-
         @overload
         def __init__(
-            self,
-            nameservers: Optional[Sequence[str]] = ...,
-            loop: Optional[asyncio.AbstractEventLoop] = ...,
-            *,
-            flags: Optional[int] = None,
-            timeout: Optional[float] = None,
-            tries: Optional[int] = None,
-            ndots: Optional[int] = None,
-            tcp_port: Optional[int] = None,
-            udp_port: Optional[int] = None,
-            domains: Optional[Sequence[str]] = None,
-            lookups: Optional[str] = None,
-            socket_send_buffer_size: Optional[int] = None,
-            socket_receive_buffer_size: Optional[int] = None,
-            rotate: bool = False,
-            local_ip: Optional[str] = None,
-            local_dev: Optional[str] = None,
-            resolvconf_path: Optional[str] = None,
+                self,
+                nameservers: Sequence[str] | None = ...,
+                loop: asyncio.AbstractEventLoop | None = ...,
+                *,
+                flags: int | None = None,
+                timeout: float | None = None,
+                tries: int | None = None,
+                ndots: int | None = None,
+                tcp_port: int | None = None,
+                udp_port: int | None = None,
+                domains: Sequence[str] | None = None,
+                lookups: str | None = None,
+                socket_send_buffer_size: int | None = None,
+                socket_receive_buffer_size: int | None = None,
+                rotate: bool = False,
+                local_ip: str | None = None,
+                local_dev: str | None = None,
+                resolvconf_path: str | None = None,
         ) -> None: ...
 
     def __init__(
         self,
-        nameservers: Optional[Sequence[str]] = None,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        nameservers: Sequence[str] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
         **kwargs: Any,
     ) -> None:
         self._closed = True
@@ -139,7 +135,7 @@ class DNSResolver:
             self.nameservers = nameservers
         self._read_fds: set[int] = set()
         self._write_fds: set[int] = set()
-        self._timer: Optional[asyncio.TimerHandle] = None
+        self._timer: asyncio.TimerHandle | None = None
         self._closed = False
 
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
@@ -188,11 +184,11 @@ class DNSResolver:
         return self._channel.servers
 
     @nameservers.setter
-    def nameservers(self, value: Iterable[Union[str, bytes]]) -> None:
+    def nameservers(self, value: Iterable[str | bytes]) -> None:
         self._channel.servers = value
 
     def _callback(
-        self, fut: asyncio.Future[_T], result: _T, errorno: Optional[int]
+        self, fut: asyncio.Future[_T], result: _T, errorno: int | None
     ) -> None:
         if fut.cancelled():
             return
@@ -221,52 +217,52 @@ class DNSResolver:
 
     @overload
     def query(
-        self, host: str, qtype: Literal['A'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['A'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_a_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['AAAA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['AAAA'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_aaaa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['CAA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CAA'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_caa_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['CNAME'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['CNAME'], qclass: str | None = ...
     ) -> asyncio.Future[pycares.ares_query_cname_result]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['MX'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['MX'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_mx_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['NAPTR'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NAPTR'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_naptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['NS'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['NS'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_ns_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['PTR'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['PTR'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_ptr_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['SOA'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SOA'], qclass: str | None = ...
     ) -> asyncio.Future[pycares.ares_query_soa_result]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['SRV'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['SRV'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_srv_result]]: ...
     @overload
     def query(
-        self, host: str, qtype: Literal['TXT'], qclass: Optional[str] = ...
+        self, host: str, qtype: Literal['TXT'], qclass: str | None = ...
     ) -> asyncio.Future[list[pycares.ares_query_txt_result]]: ...
 
     def query(
-        self, host: str, qtype: str, qclass: Optional[str] = None
-    ) -> Union[asyncio.Future[list[Any]], asyncio.Future[Any]]:
+        self, host: str, qtype: str, qclass: str | None = None
+    ) -> asyncio.Future[list[Any]] | asyncio.Future[Any]:
         try:
             qtype = query_type_map[qtype]
         except KeyError as e:
@@ -277,7 +273,7 @@ class DNSResolver:
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut: Union[asyncio.Future[list[Any]], asyncio.Future[Any]]
+        fut: asyncio.Future[list[Any]] | asyncio.Future[Any]
         fut, cb = self._get_future_callback()
         self._channel.query(host, qtype, cb, query_class=qclass)
         return fut
@@ -294,7 +290,7 @@ class DNSResolver:
         self,
         host: str,
         family: socket.AddressFamily = socket.AF_UNSPEC,
-        port: Optional[int] = None,
+        port: int | None = None,
         proto: int = 0,
         type: int = 0,
         flags: int = 0,
@@ -308,7 +304,7 @@ class DNSResolver:
 
     def getnameinfo(
         self,
-        sockaddr: Union[tuple[str, int], tuple[str, int, int, int]],
+        sockaddr: tuple[str, int] | tuple[str, int, int, int],
         flags: int = 0,
     ) -> asyncio.Future[pycares.ares_nameinfo_result]:
         fut: asyncio.Future[pycares.ares_nameinfo_result]
@@ -413,9 +409,9 @@ class DNSResolver:
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit the async context manager."""
         await self.close()
