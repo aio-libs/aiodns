@@ -1,3 +1,7 @@
+3.6.1
+=====
+- Pin pycares to < 5
+
 3.6.0
 =====
 - Fix resolver garbage collection during pending queries (#211)
