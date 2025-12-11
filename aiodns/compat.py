@@ -116,6 +116,7 @@ class AresQueryPTRResult:
 
     name: str
     ttl: int
+    aliases: list[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,8 +216,8 @@ def _convert_record(record: Any) -> Any:
             ttl=ttl,
         )
     elif record_type == pycares.QUERY_TYPE_PTR:
-        # pycares 5: dname -> name
-        return AresQueryPTRResult(name=data.dname, ttl=ttl)
+        # pycares 5: dname -> name, aliases not available in pycares 5
+        return AresQueryPTRResult(name=data.dname, ttl=ttl, aliases=[])
     else:
         # Return raw record for unknown types
         return record

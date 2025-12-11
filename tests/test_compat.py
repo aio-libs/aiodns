@@ -136,9 +136,12 @@ class TestResultDataclasses:
         assert result.ttl == 300
 
     def test_ares_query_ptr_result(self) -> None:
-        result = AresQueryPTRResult(name='host.example.com', ttl=300)
+        result = AresQueryPTRResult(
+            name='host.example.com', ttl=300, aliases=['alias.example.com']
+        )
         assert result.name == 'host.example.com'
         assert result.ttl == 300
+        assert result.aliases == ['alias.example.com']
 
     def test_ares_host_result(self) -> None:
         result = AresHostResult(
@@ -343,6 +346,7 @@ class TestConvertRecord:
         assert isinstance(result, AresQueryPTRResult)
         assert result.name == 'host.example.com'
         assert result.ttl == 300
+        assert result.aliases == []  # pycares 5 doesn't provide aliases
 
     def test_convert_unknown_record_type(self) -> None:
         data = unittest.mock.MagicMock()
