@@ -344,18 +344,34 @@ class TestUV_QueryTimeout(TestQueryTimeout):
 
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
 def test_win32_no_selector_event_loop() -> None:
-    """Test DNSResolver with Windows without SelectorEventLoop."""
+    """Test DNSResolver with Windows without SelectorEventLoop.
+
+    With pycares 5, event_thread is used by default. The SelectorEventLoop
+    check only triggers when event_thread creation fails and we fall back
+    to sock_state_cb mode.
+    """
     # Create a non-SelectorEventLoop to trigger the error
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
     mock_loop.__class__ = (
         asyncio.AbstractEventLoop  # type: ignore[assignment]
     )
 
+    # Mock channel creation to fail on first call (event_thread),
+    # triggering the fallback path where SelectorEventLoop is required
+    mock_channel = unittest.mock.MagicMock()
+
     with (
         pytest.raises(
             RuntimeError, match='aiodns needs a SelectorEventLoop on Windows'
         ),
         unittest.mock.patch('sys.platform', 'win32'),
+        unittest.mock.patch(
+            'aiodns.pycares.Channel',
+            side_effect=[
+                pycares.AresError(1, 'mock error'),  # First call fails
+                mock_channel,  # Second call would succeed
+            ],
+        ),
     ):
         aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
 
