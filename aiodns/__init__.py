@@ -272,23 +272,20 @@ class DNSResolver:
         self, host: str, qtype: str, qclass: str | None = None
     ) -> asyncio.Future[QueryResult]:
         try:
-            qtype_int = query_type_map[qtype]
+            qtype = query_type_map[qtype]
         except KeyError as e:
             raise ValueError(f'invalid query type: {qtype}') from e
-        qclass_int: int | None = None
         if qclass is not None:
             try:
-                qclass_int = query_class_map[qclass]
+                qclass = query_class_map[qclass]
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut, cb = self._get_query_future_callback(qtype_int)
-        if qclass_int is not None:
-            self._channel.query(
-                host, qtype_int, query_class=qclass_int, callback=cb
-            )
+        fut, cb = self._get_query_future_callback(qtype)
+        if qclass is not None:
+            self._channel.query(host, qtype, query_class=qclass, callback=cb)
         else:
-            self._channel.query(host, qtype_int, callback=cb)
+            self._channel.query(host, qtype, callback=cb)
         return fut
 
     def _gethostbyname_callback(
