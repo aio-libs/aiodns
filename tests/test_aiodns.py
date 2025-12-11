@@ -962,8 +962,8 @@ def test_gethostbyname_with_sock_state_cb_fallback() -> None:
         loop.close()
 
 
-def test_sock_state_cb_wrapper_with_dead_resolver() -> None:
-    """Test sock_state_cb_wrapper handles garbage collected resolver.
+def test_sock_state_cb_wrapper_with_dead_weak_ref() -> None:
+    """Test sock_state_cb_wrapper handles dead weak reference.
 
     When the resolver is garbage collected but the callback is still
     referenced by pycares, calling the callback should not raise an error.
@@ -985,25 +985,42 @@ def test_sock_state_cb_wrapper_with_dead_resolver() -> None:
     # Use a mock loop to avoid any real socket operations
     mock_loop = unittest.mock.MagicMock(spec=asyncio.SelectorEventLoop)
 
+    # Create a mock weak ref that returns None (simulating dead resolver)
+    mock_dead_weak_ref = unittest.mock.MagicMock(return_value=None)
+
     with unittest.mock.patch(
         'aiodns.pycares.Channel', side_effect=patched_channel
     ):
-        resolver = aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
+        with unittest.mock.patch(
+            'aiodns.weakref.ref', return_value=mock_dead_weak_ref
+        ):
+            resolver = aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
 
-        # Verify we captured the callback and are using fallback path
-        assert resolver._event_thread is False
-        assert captured_callback is not None
+            # Verify we captured the callback and are using fallback path
+            assert resolver._event_thread is False
+            assert captured_callback is not None
 
-        # Mark as closed to prevent cleanup issues
-        resolver._closed = True
-
-    # Delete resolver and force garbage collection
-    del resolver
-    gc.collect()
+            # Mark as closed to prevent cleanup issues
+            resolver._closed = True
 
     # Call the captured callback - should not raise since weak ref returns None
     # This exercises the "if this is not None:" branch when this IS None
-    captured_callback(5, True, False)  # fd=5, readable=True, writable=False
+    captured_callback(5, True, False)
+
+
+def test_nameservers_property_getter() -> None:
+    """Test that nameservers property getter returns channel servers."""
+    loop = asyncio.new_event_loop()
+    resolver = aiodns.DNSResolver(loop=loop, timeout=5.0)
+
+    # Get nameservers through the property (covers _channel.servers getter)
+    servers = resolver.nameservers
+
+    # Should return a list (might be empty or have system defaults)
+    assert isinstance(servers, (list, tuple))
+
+    resolver._closed = True
+    loop.close()
 
 
 if __name__ == '__main__':  # pragma: no cover
