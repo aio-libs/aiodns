@@ -5,6 +5,7 @@ import functools
 import logging
 import socket
 import sys
+import warnings
 import weakref
 from collections.abc import Callable, Iterable, Sequence
 from types import TracebackType
@@ -274,6 +275,12 @@ class DNSResolver:
     def query(
         self, host: str, qtype: str, qclass: str | None = None
     ) -> asyncio.Future[list[Any]] | asyncio.Future[Any]:
+        """Query DNS records (deprecated, use query_dns instead)."""
+        warnings.warn(
+            'query() is deprecated, use query_dns() instead',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         try:
             qtype_int = query_type_map[qtype]
         except KeyError as e:
@@ -286,6 +293,31 @@ class DNSResolver:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
         fut, cb = self._get_query_future_callback(qtype_int)
+        if qclass_int is not None:
+            self._channel.query(
+                host, qtype_int, query_class=qclass_int, callback=cb
+            )
+        else:
+            self._channel.query(host, qtype_int, callback=cb)
+        return fut
+
+    def query_dns(
+        self, host: str, qtype: str, qclass: str | None = None
+    ) -> asyncio.Future[pycares.DNSResult]:
+        """Query DNS records, returning native pycares 5.x DNSResult."""
+        try:
+            qtype_int = query_type_map[qtype]
+        except KeyError as e:
+            raise ValueError(f'invalid query type: {qtype}') from e
+        qclass_int: int | None = None
+        if qclass is not None:
+            try:
+                qclass_int = query_class_map[qclass]
+            except KeyError as e:
+                raise ValueError(f'invalid query class: {qclass}') from e
+
+        fut: asyncio.Future[pycares.DNSResult]
+        fut, cb = self._get_future_callback()
         if qclass_int is not None:
             self._channel.query(
                 host, qtype_int, query_class=qclass_int, callback=cb

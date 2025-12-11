@@ -1043,6 +1043,50 @@ def test_nameservers_strips_port() -> None:
     loop.close()
 
 
+@pytest.mark.asyncio
+async def test_query_dns() -> None:
+    """Test query_dns returns native pycares DNSResult."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    resolver.nameservers = ['8.8.8.8']
+
+    result = await resolver.query_dns('google.com', 'A')
+
+    # Should return pycares.DNSResult
+    assert isinstance(result, pycares.DNSResult)
+    assert hasattr(result, 'answer')
+    assert hasattr(result, 'authority')
+    assert hasattr(result, 'additional')
+
+    # Answer should contain DNSRecord objects
+    assert len(result.answer) > 0
+    record = result.answer[0]
+    assert hasattr(record, 'type')
+    assert hasattr(record, 'ttl')
+    assert hasattr(record, 'data')
+    assert record.type == pycares.QUERY_TYPE_A
+
+    await resolver.close()
+
+
+@pytest.mark.asyncio
+async def test_query_deprecation_warning() -> None:
+    """Test that query() emits deprecation warning."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    resolver.nameservers = ['8.8.8.8']
+
+    import warnings
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+        await resolver.query('google.com', 'A')
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert 'query() is deprecated' in str(w[0].message)
+
+    await resolver.close()
+
+
 def test_getaddrinfo_with_sock_state_cb_fallback() -> None:
     """Test getaddrinfo with sock_state_cb fallback.
 
