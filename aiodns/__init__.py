@@ -160,7 +160,7 @@ class DNSResolver:
 
     @nameservers.setter
     def nameservers(self, value: Iterable[str | bytes]) -> None:
-        self._channel.servers = list(value)
+        self._channel.servers = value
 
     def _callback(
         self, fut: asyncio.Future[_T], result: _T, errorno: int | None
