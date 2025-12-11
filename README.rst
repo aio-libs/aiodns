@@ -78,6 +78,24 @@ The old ``query()`` method is deprecated but continues to work for backward comp
         print(record.data.exchange, record.data.priority)
 
 
+Future migration to aiodns 5.x
+------------------------------
+
+The temporary ``query_dns()`` naming allows gradual migration without breaking changes:
+
++-----------+---------------------------------------+--------------------------------------------+
+| Version   | ``query()``                           | ``query_dns()``                            |
++===========+=======================================+============================================+
+| **4.x**   | Deprecated, returns compat types      | New API, returns pycares 5.x types         |
++-----------+---------------------------------------+--------------------------------------------+
+| **5.x**   | New API, returns pycares 5.x types    | Alias to ``query()`` for back compat       |
++-----------+---------------------------------------+--------------------------------------------+
+
+In aiodns 5.x, ``query()`` will become the primary API returning native pycares 5.x types,
+and ``query_dns()`` will remain as an alias for backward compatibility. This allows downstream
+projects to migrate at their own pace.
+
+
 Async Context Manager Support
 =============================
 
