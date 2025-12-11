@@ -223,9 +223,7 @@ def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
         return AresQueryCAAResult(
             critical=caa_data.critical,
             property=caa_data.tag,
-            value=caa_data.value.encode()
-            if isinstance(caa_data.value, str)
-            else caa_data.value,
+            value=caa_data.value.encode(),
             ttl=ttl,
         )
     if record_type == pycares.QUERY_TYPE_PTR:
@@ -255,7 +253,7 @@ def convert_result(dns_result: pycares.DNSResult, qtype: int) -> QueryResult:
 
         # CNAME and SOA return single result, not list
         if record_type in (pycares.QUERY_TYPE_CNAME, pycares.QUERY_TYPE_SOA):
-            return converted
+            return cast(QueryResult, converted)
 
         results.append(converted)
 

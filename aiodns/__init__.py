@@ -212,8 +212,9 @@ class DNSResolver:
     ) -> tuple[asyncio.Future[QueryResult], Callable[..., None]]:
         """Return a future and callback for query with result conversion."""
         future: asyncio.Future[QueryResult] = self.loop.create_future()
+        cb: Callable[..., None]
         if self._event_thread:
-            cb = functools.partial(
+            cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
                 self._query_callback,
                 future,
@@ -272,20 +273,23 @@ class DNSResolver:
         self, host: str, qtype: str, qclass: str | None = None
     ) -> asyncio.Future[QueryResult]:
         try:
-            qtype = query_type_map[qtype]
+            qtype_int = query_type_map[qtype]
         except KeyError as e:
             raise ValueError(f'invalid query type: {qtype}') from e
+        qclass_int: int | None = None
         if qclass is not None:
             try:
-                qclass = query_class_map[qclass]
+                qclass_int = query_class_map[qclass]
             except KeyError as e:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
-        fut, cb = self._get_query_future_callback(qtype)
-        if qclass is not None:
-            self._channel.query(host, qtype, query_class=qclass, callback=cb)
+        fut, cb = self._get_query_future_callback(qtype_int)
+        if qclass_int is not None:
+            self._channel.query(
+                host, qtype_int, query_class=qclass_int, callback=cb
+            )
         else:
-            self._channel.query(host, qtype, callback=cb)
+            self._channel.query(host, qtype_int, callback=cb)
         return fut
 
     def _gethostbyname_callback(
@@ -322,8 +326,9 @@ class DNSResolver:
         the gethostbyname method.
         """
         fut: asyncio.Future[AresHostResult] = self.loop.create_future()
+        cb: Callable[..., None]
         if self._event_thread:
-            cb = functools.partial(
+            cb = functools.partial(  # type: ignore[assignment]
                 self.loop.call_soon_threadsafe,
                 self._gethostbyname_callback,
                 fut,
