@@ -291,6 +291,30 @@ class DNSResolver:
             self._channel.query(host, qtype_int, callback=cb)
         return fut
 
+    def _gethostbyname_callback(
+        self,
+        fut: asyncio.Future[AresHostResult],
+        host: str,
+        result: pycares.AddrInfoResult | None,
+        errorno: int | None,
+    ) -> None:
+        """Callback for gethostbyname that converts AddrInfoResult."""
+        if fut.cancelled():
+            return
+        if errorno is not None:
+            fut.set_exception(
+                error.DNSError(errorno, pycares.errno.strerror(errorno))
+            )
+        else:
+            assert result is not None  # noqa: S101
+            # node.addr is (address_bytes, port) - extract and decode
+            addresses = [node.addr[0].decode() for node in result.nodes]
+            # Get canonical name from cnames if available
+            name = result.cnames[0].name if result.cnames else host
+            fut.set_result(
+                AresHostResult(name=name, aliases=[], addresses=addresses)
+            )
+
     def gethostbyname(
         self, host: str, family: socket.AddressFamily
     ) -> asyncio.Future[AresHostResult]:
@@ -301,36 +325,16 @@ class DNSResolver:
         the gethostbyname method.
         """
         fut: asyncio.Future[AresHostResult] = self.loop.create_future()
-
-        def _do_callback(
-            result: pycares.AddrInfoResult | None, errorno: int | None
-        ) -> None:
-            if fut.cancelled():
-                return
-            if errorno is not None:
-                fut.set_exception(
-                    error.DNSError(errorno, pycares.errno.strerror(errorno))
-                )
-            else:
-                assert result is not None  # noqa: S101
-                # node.addr is (address_bytes, port) - extract and decode
-                addresses = [node.addr[0].decode() for node in result.nodes]
-                # Get canonical name from cnames if available
-                name = result.cnames[0].name if result.cnames else host
-                fut.set_result(
-                    AresHostResult(name=name, aliases=[], addresses=addresses)
-                )
-
         if self._event_thread:
-
-            def callback(
-                result: pycares.AddrInfoResult | None, errorno: int | None
-            ) -> None:
-                self.loop.call_soon_threadsafe(_do_callback, result, errorno)
+            cb = functools.partial(
+                self.loop.call_soon_threadsafe,
+                self._gethostbyname_callback,
+                fut,
+                host,
+            )
         else:
-            callback = _do_callback
-
-        self._channel.getaddrinfo(host, None, family=family, callback=callback)
+            cb = functools.partial(self._gethostbyname_callback, fut, host)
+        self._channel.getaddrinfo(host, None, family=family, callback=cb)
         return fut
 
     def getaddrinfo(
