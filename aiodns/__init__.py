@@ -61,16 +61,13 @@ query_type_map = {
     'ANY': pycares.QUERY_TYPE_ANY,
     'CAA': pycares.QUERY_TYPE_CAA,
     'CNAME': pycares.QUERY_TYPE_CNAME,
-    'HTTPS': pycares.QUERY_TYPE_HTTPS,
     'MX': pycares.QUERY_TYPE_MX,
     'NAPTR': pycares.QUERY_TYPE_NAPTR,
     'NS': pycares.QUERY_TYPE_NS,
     'PTR': pycares.QUERY_TYPE_PTR,
     'SOA': pycares.QUERY_TYPE_SOA,
     'SRV': pycares.QUERY_TYPE_SRV,
-    'TLSA': pycares.QUERY_TYPE_TLSA,
     'TXT': pycares.QUERY_TYPE_TXT,
-    'URI': pycares.QUERY_TYPE_URI,
 }
 
 query_class_map = {
