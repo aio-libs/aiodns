@@ -416,9 +416,11 @@ class TestConvertResult:
 
         assert isinstance(result, list)
         assert len(result) == 2
-        assert all(isinstance(r, AresQueryAResult) for r in result)
-        assert result[0].host == '192.168.1.1'
-        assert result[1].host == '192.168.1.2'
+        first, second = result[0], result[1]
+        assert isinstance(first, AresQueryAResult)
+        assert isinstance(second, AresQueryAResult)
+        assert first.host == '192.168.1.1'
+        assert second.host == '192.168.1.2'
 
     def test_convert_cname_query_returns_single_result(self) -> None:
         data = unittest.mock.MagicMock()

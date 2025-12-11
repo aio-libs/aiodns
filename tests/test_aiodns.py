@@ -63,7 +63,7 @@ class DNSTest(unittest.TestCase):
 
     def test_query_async_await(self) -> None:
         async def f() -> list[aiodns.AresQueryAResult]:
-            return await self.resolver.query('google.com', 'A')  # type: ignore[return-value]
+            return await self.resolver.query('google.com', 'A')
 
         result = self.loop.run_until_complete(f())
         self.assertTrue(result)
