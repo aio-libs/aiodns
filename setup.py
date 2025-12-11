@@ -21,7 +21,7 @@ setup(
     license='MIT',
     long_description=codecs.open('README.rst', encoding='utf-8').read(),
     long_description_content_type='text/x-rst',
-    install_requires=['pycares>=4.9.0,<5'],
+    install_requires=['pycares>=5.0.0,<6'],
     packages=['aiodns'],
     package_data={'aiodns': ['py.typed']},
     platforms=['POSIX', 'Microsoft Windows'],

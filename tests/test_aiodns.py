@@ -3,7 +3,6 @@
 import asyncio
 import gc
 import ipaddress
-import logging
 import socket
 import sys
 import time
@@ -11,7 +10,6 @@ import unittest
 import unittest.mock
 from typing import Any
 
-import pycares
 import pytest
 
 import aiodns
@@ -56,14 +54,21 @@ class DNSTest(unittest.TestCase):
 
     def test_query_a(self) -> None:
         f = self.resolver.query('google.com', 'A')
-        self.loop.run_until_complete(f)
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        # Check compatibility - result should be a list of AresQueryAResult
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
+        self.assertTrue(hasattr(result[0], 'ttl'))
 
     def test_query_async_await(self) -> None:
-        async def f() -> list[pycares.ares_query_a_result]:
-            return await self.resolver.query('google.com', 'A')
+        async def f() -> list[aiodns.AresQueryAResult]:
+            return await self.resolver.query('google.com', 'A')  # type: ignore[return-value]
 
         result = self.loop.run_until_complete(f())
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
 
     def test_query_a_bad(self) -> None:
         f = self.resolver.query('hgf8g2od29hdohid.com', 'A')
@@ -76,21 +81,30 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.query('ipv6.google.com', 'AAAA')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
 
     def test_query_cname(self) -> None:
         f = self.resolver.query('www.amazon.com', 'CNAME')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        # CNAME returns single result, not list
+        self.assertTrue(hasattr(result, 'cname'))
 
     def test_query_mx(self) -> None:
         f = self.resolver.query('google.com', 'MX')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
+        self.assertTrue(hasattr(result[0], 'priority'))
 
     def test_query_ns(self) -> None:
         f = self.resolver.query('google.com', 'NS')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
 
     @unittest.skipIf(
         sys.platform == 'darwin', 'skipped on Darwin as it is flakey on CI'
@@ -99,21 +113,32 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.query('google.com', 'TXT')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'text'))
 
     def test_query_soa(self) -> None:
         f = self.resolver.query('google.com', 'SOA')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        # SOA returns single result, not list
+        self.assertTrue(hasattr(result, 'nsname'))
+        self.assertTrue(hasattr(result, 'hostmaster'))
 
     def test_query_srv(self) -> None:
         f = self.resolver.query('_xmpp-server._tcp.jabber.org', 'SRV')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'host'))
+        self.assertTrue(hasattr(result[0], 'port'))
 
     def test_query_naptr(self) -> None:
         f = self.resolver.query('sip2sip.info', 'NAPTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'order'))
+        self.assertTrue(hasattr(result[0], 'preference'))
 
     def test_query_ptr(self) -> None:
         ip = '172.253.122.26'
@@ -122,6 +147,8 @@ class DNSTest(unittest.TestCase):
         )
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertTrue(hasattr(result[0], 'name'))
 
     def test_query_bad_type(self) -> None:
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')
@@ -164,6 +191,9 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.gethostbyname('google.com', socket.AF_INET)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertTrue(hasattr(result, 'name'))
+        self.assertTrue(hasattr(result, 'addresses'))
+        self.assertTrue(len(result.addresses) > 0)
 
     def test_getaddrinfo_address_family_0(self) -> None:
         f = self.resolver.getaddrinfo('google.com')
@@ -209,6 +239,7 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.gethostbyname('ipv6.google.com', socket.AF_INET6)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
+        self.assertTrue(len(result.addresses) > 0)
 
     def test_gethostbyname_bad_family(self) -> None:
         f = self.resolver.gethostbyname('ipv6.google.com', -1)  # type: ignore[arg-type]
@@ -292,16 +323,6 @@ class TestUV_DNS(DNSTest):
         self.resolver.nameservers = ['8.8.8.8']
 
 
-class TestNoEventThreadDNS(DNSTest):
-    """Test DNSResolver with no event thread."""
-
-    def setUp(self) -> None:
-        with unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ):
-            super().setUp()
-
-
 @unittest.skipIf(skip_uvloop, 'uvloop/winloop unavailable or Python 3.14+')
 class TestUV_QueryTxtChaos(TestQueryTxtChaos):
     """Test DNS queries with CHAOS class using uvloop."""
@@ -328,26 +349,6 @@ class TestUV_QueryTimeout(TestQueryTimeout):
         self.resolver.nameservers = ['1.2.3.4']
 
 
-class TestNoEventThreadQueryTxtChaos(TestQueryTxtChaos):
-    """Test DNS queries with CHAOS class without event thread."""
-
-    def setUp(self) -> None:
-        with unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ):
-            super().setUp()
-
-
-class TestNoEventThreadQueryTimeout(TestQueryTimeout):
-    """Test DNS queries with timeout configuration without event thread."""
-
-    def setUp(self) -> None:
-        with unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ):
-            super().setUp()
-
-
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
 def test_win32_no_selector_event_loop() -> None:
     """Test DNSResolver with Windows without SelectorEventLoop."""
@@ -361,103 +362,9 @@ def test_win32_no_selector_event_loop() -> None:
         pytest.raises(
             RuntimeError, match='aiodns needs a SelectorEventLoop on Windows'
         ),
-        unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ),
         unittest.mock.patch('sys.platform', 'win32'),
     ):
         aiodns.DNSResolver(loop=mock_loop, timeout=5.0)
-
-
-@pytest.mark.parametrize(
-    ('platform', 'expected_msg_parts', 'unexpected_msg_parts'),
-    [
-        (
-            'linux',
-            [
-                'automatic monitoring of',
-                'resolver configuration changes',
-                'system ran out of inotify watches',
-                'Falling back to socket state callback',
-                'Consider increasing the system inotify watch limit',
-            ],
-            [],
-        ),
-        (
-            'darwin',
-            [
-                'automatic monitoring',
-                'resolver configuration changes',
-                'Falling back to socket state callback',
-            ],
-            [
-                'system ran out of inotify watches',
-                'Consider increasing the system inotify watch limit',
-            ],
-        ),
-        (
-            'win32',
-            [
-                'automatic monitoring',
-                'resolver configuration changes',
-                'Falling back to socket state callback',
-            ],
-            [
-                'system ran out of inotify watches',
-                'Consider increasing the system inotify watch limit',
-            ],
-        ),
-    ],
-)
-async def test_make_channel_ares_error(
-    platform: str,
-    expected_msg_parts: list[str],
-    unexpected_msg_parts: list[str],
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Test exception handling in _make_channel on different platforms."""
-    # Set log level to capture warnings
-    caplog.set_level(logging.WARNING)
-
-    # Create a mock loop that is a SelectorEventLoop to
-    # avoid Windows-specific errors
-    mock_loop = unittest.mock.MagicMock(spec=asyncio.SelectorEventLoop)
-    mock_channel = unittest.mock.MagicMock()
-
-    with (
-        unittest.mock.patch('sys.platform', platform),
-        # Configure first Channel call to raise AresError,
-        # second call to return our mock
-        unittest.mock.patch(
-            'aiodns.pycares.Channel',
-            side_effect=[
-                pycares.AresError('Mock error'),
-                mock_channel,
-            ],
-        ),
-        unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=True
-        ),
-        # Also patch asyncio.get_event_loop to return our mock loop
-        unittest.mock.patch('asyncio.get_event_loop', return_value=mock_loop),
-    ):
-        # Create resolver which will call _make_channel
-        resolver = aiodns.DNSResolver(loop=mock_loop)
-
-        # Check that event_thread is False due to exception
-        assert resolver._event_thread is False
-
-        # Check expected message parts in the captured log
-        for part in expected_msg_parts:
-            assert part in caplog.text
-
-        # Check unexpected message parts aren't in the captured log
-        for part in unexpected_msg_parts:
-            assert part not in caplog.text
-
-        # Manually set _closed to True to prevent cleanup logic from
-        # running during the test.
-        resolver._closed = True
 
 
 def test_win32_import_winloop_error() -> None:
@@ -482,9 +389,6 @@ def test_win32_import_winloop_error() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
         unittest.mock.patch(
             'importlib.import_module', side_effect=mock_import
@@ -526,9 +430,6 @@ def test_win32_winloop_not_loop_instance() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
         unittest.mock.patch(
             'importlib.import_module', side_effect=mock_import
@@ -572,9 +473,6 @@ def test_win32_winloop_loop_instance() -> None:
 
     with (
         unittest.mock.patch('sys.platform', 'win32'),
-        unittest.mock.patch(
-            'aiodns.pycares.ares_threadsafety', return_value=False
-        ),
         unittest.mock.patch('builtins.__import__', side_effect=mock_import),
         unittest.mock.patch(
             'importlib.import_module', side_effect=mock_import
@@ -844,9 +742,10 @@ async def test_temporary_resolver_not_garbage_collected() -> None:
         'google.com', 'A'
     )
 
-    # Query should succeed
+    # Query should succeed - result is now a list with host attribute
     assert result
     assert len(result) > 0
+    assert hasattr(result[0], 'host')
 
 
 if __name__ == '__main__':  # pragma: no cover
