@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest.mock
+from dataclasses import fields
 from typing import Any
 
 import pycares
@@ -24,6 +25,73 @@ from aiodns.compat import (
     _convert_record,
     convert_result,
 )
+
+# Expected field names from pycares 4.x (in order)
+# These were extracted from pycares 4.11.0 __slots__
+PYCARES4_SLOTS = {
+    'ares_query_a_result': ('host', 'ttl'),
+    'ares_query_aaaa_result': ('host', 'ttl'),
+    'ares_query_cname_result': ('cname', 'ttl'),
+    'ares_query_mx_result': ('host', 'priority', 'ttl'),
+    'ares_query_ns_result': ('host', 'ttl'),
+    'ares_query_txt_result': ('text', 'ttl'),
+    'ares_query_soa_result': (
+        'nsname',
+        'hostmaster',
+        'serial',
+        'refresh',
+        'retry',
+        'expires',
+        'minttl',
+        'ttl',
+    ),
+    'ares_query_srv_result': ('host', 'port', 'priority', 'weight', 'ttl'),
+    'ares_query_naptr_result': (
+        'order',
+        'preference',
+        'flags',
+        'service',
+        'regex',
+        'replacement',
+        'ttl',
+    ),
+    'ares_query_caa_result': ('critical', 'property', 'value', 'ttl'),
+    'ares_query_ptr_result': ('name', 'ttl', 'aliases'),
+    'ares_host_result': ('name', 'aliases', 'addresses'),
+}
+
+# Map pycares 4 type names to our compat types
+COMPAT_TYPE_MAP = {
+    'ares_query_a_result': AresQueryAResult,
+    'ares_query_aaaa_result': AresQueryAAAAResult,
+    'ares_query_cname_result': AresQueryCNAMEResult,
+    'ares_query_mx_result': AresQueryMXResult,
+    'ares_query_ns_result': AresQueryNSResult,
+    'ares_query_txt_result': AresQueryTXTResult,
+    'ares_query_soa_result': AresQuerySOAResult,
+    'ares_query_srv_result': AresQuerySRVResult,
+    'ares_query_naptr_result': AresQueryNAPTRResult,
+    'ares_query_caa_result': AresQueryCAAResult,
+    'ares_query_ptr_result': AresQueryPTRResult,
+    'ares_host_result': AresHostResult,
+}
+
+
+@pytest.mark.parametrize(
+    'pycares4_name,expected_slots',
+    list(PYCARES4_SLOTS.items()),
+    ids=list(PYCARES4_SLOTS.keys()),
+)
+def test_compat_type_matches_pycares4_slots(
+    pycares4_name: str, expected_slots: tuple[str, ...]
+) -> None:
+    """Verify compat types have same fields as pycares 4.x types."""
+    compat_type = COMPAT_TYPE_MAP[pycares4_name]
+    actual_fields = tuple(f.name for f in fields(compat_type))
+    assert actual_fields == expected_slots, (
+        f'{compat_type.__name__} fields {actual_fields} '
+        f'do not match pycares 4 {pycares4_name} slots {expected_slots}'
+    )
 
 
 def make_mock_record(record_type: int, data: Any, ttl: int = 300) -> Any:
