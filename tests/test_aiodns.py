@@ -1069,6 +1069,143 @@ def test_getaddrinfo_with_sock_state_cb_fallback() -> None:
         loop.close()
 
 
+def test_timer_cb_with_active_fds() -> None:
+    """Test _timer_cb when there are active file descriptors."""
+    loop = asyncio.SelectorEventLoop()
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise pycares.AresError(1, 'Simulated failure')
+        return original_channel(*args, **kwargs)
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(loop=loop, timeout=0)
+        resolver.nameservers = ['8.8.8.8']
+
+        assert resolver._event_thread is False
+
+        # Simulate having active file descriptors
+        resolver._read_fds.add(999)
+
+        # Call _timer_cb directly - should process_fd and restart timer
+        resolver._timer_cb()
+
+        # Timer should be restarted since we have active fds
+        assert resolver._timer is not None
+
+        # Clean up
+        resolver._read_fds.clear()
+        resolver._timer_cb()
+
+        # Timer should be None now since no active fds
+        assert resolver._timer is None
+
+        resolver._closed = True
+
+    loop.close()
+
+
+def test_sock_state_cb_writable() -> None:
+    """Test _sock_state_cb with writable socket."""
+    loop = asyncio.SelectorEventLoop()
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise pycares.AresError(1, 'Simulated failure')
+        return original_channel(*args, **kwargs)
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(loop=loop, timeout=5.0)
+
+        assert resolver._event_thread is False
+
+        # Mock add_reader/add_writer/remove_reader/remove_writer
+        # since we can't use fake file descriptors
+        resolver.loop.add_reader = unittest.mock.MagicMock()
+        resolver.loop.add_writer = unittest.mock.MagicMock()
+        resolver.loop.remove_reader = unittest.mock.MagicMock()
+        resolver.loop.remove_writer = unittest.mock.MagicMock()
+
+        # Test writable only (readable=False, writable=True)
+        resolver._sock_state_cb(100, False, True)
+        assert 100 in resolver._write_fds
+        assert 100 not in resolver._read_fds
+        assert resolver._timer is not None
+        resolver.loop.add_writer.assert_called()
+
+        # Test socket close for write fd
+        resolver._sock_state_cb(100, False, False)
+        assert 100 not in resolver._write_fds
+        resolver.loop.remove_writer.assert_called()
+
+        # Test readable and writable together
+        resolver._sock_state_cb(101, True, True)
+        assert 101 in resolver._read_fds
+        assert 101 in resolver._write_fds
+
+        # Test socket close for both
+        resolver._sock_state_cb(101, False, False)
+        assert 101 not in resolver._read_fds
+        assert 101 not in resolver._write_fds
+
+        # Timer should be cancelled when no fds left
+        assert resolver._timer is None
+
+        resolver._closed = True
+
+    loop.close()
+
+
+def test_timer_cb_without_active_fds() -> None:
+    """Test _timer_cb when there are no active file descriptors."""
+    loop = asyncio.SelectorEventLoop()
+    original_channel = pycares.Channel
+    call_count = 0
+
+    def patched_channel(*args: Any, **kwargs: Any) -> pycares.Channel:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise pycares.AresError(1, 'Simulated failure')
+        return original_channel(*args, **kwargs)
+
+    with unittest.mock.patch(
+        'aiodns.pycares.Channel', side_effect=patched_channel
+    ):
+        resolver = aiodns.DNSResolver(loop=loop, timeout=0)
+
+        assert resolver._event_thread is False
+
+        # No active file descriptors
+        assert not resolver._read_fds
+        assert not resolver._write_fds
+
+        # Set a timer manually
+        resolver._timer = loop.call_later(1, lambda: None)
+
+        # Call _timer_cb - should clear the timer
+        resolver._timer_cb()
+
+        # Timer should be None
+        assert resolver._timer is None
+
+        resolver._closed = True
+
+    loop.close()
+
+
 @pytest.mark.asyncio
 async def test_callback_cancelled_future() -> None:
     """Test _callback handles cancelled future."""
