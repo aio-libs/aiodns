@@ -47,7 +47,9 @@ class DNSTest(unittest.TestCase):
         else:
             self.loop = asyncio.new_event_loop()
         self.addCleanup(self.loop.close)
-        self.resolver = aiodns.DNSResolver(loop=self.loop, timeout=5.0)
+        self.resolver = aiodns.DNSResolver(
+            loop=self.loop, timeout=5.0
+        )  # type[aiodns.DNSResolver | None]
         self.resolver.nameservers = ['8.8.8.8']
 
     def tearDown(self) -> None:
