@@ -43,11 +43,9 @@ The API is pretty simple, the following functions are provided in the ``DNSResol
   <https://pycares.readthedocs.io/>`_ for details on the data attributes for each record type.
 * ``query(host, type)``: **Deprecated** - use ``query_dns()`` instead. This method returns results
   in a legacy format compatible with aiodns 3.x for backward compatibility.
-* ``gethostbyname(host, socket_family)``: Do a DNS resolution for the given
-  hostname and the desired type of address family (i.e. ``socket.AF_INET``).
-  While ``query_dns()`` always performs a request to a DNS server,
-  ``gethostbyname()`` first looks into ``/etc/hosts`` and thus can resolve
-  local hostnames (such as ``localhost``). The actual result of the call is a ``asyncio.Future``.
+* ``gethostbyname(host, socket_family)``: **Deprecated** - use ``getaddrinfo()`` instead.
+  Do a DNS resolution for the given hostname and the desired type of address family
+  (i.e. ``socket.AF_INET``). The actual result of the call is a ``asyncio.Future``.
 * ``gethostbyaddr(name)``: Make a reverse lookup for an address.
 * ``getaddrinfo(host, family, port, proto, type, flags)``: Resolve a host and port into a list of
   address info entries.
