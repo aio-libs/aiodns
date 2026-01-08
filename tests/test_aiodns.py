@@ -15,6 +15,19 @@ import pycares
 import pytest
 
 import aiodns
+from aiodns.compat import (
+    AresHostResult,
+    AresQueryAAAAResult,
+    AresQueryAResult,
+    AresQueryCNAMEResult,
+    AresQueryMXResult,
+    AresQueryNAPTRResult,
+    AresQueryNSResult,
+    AresQueryPTRResult,
+    AresQuerySOAResult,
+    AresQuerySRVResult,
+    AresQueryTXTResult,
+)
 
 try:
     if sys.platform == 'win32':
@@ -59,16 +72,16 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryAResult)
+        self.assertIsInstance(result[0], AresQueryAResult)
 
     def test_query_async_await(self) -> None:
-        async def f() -> list[aiodns.AresQueryAResult]:
+        async def f() -> list[AresQueryAResult]:
             return await self.resolver.query('google.com', 'A')
 
         result = self.loop.run_until_complete(f())
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryAResult)
+        self.assertIsInstance(result[0], AresQueryAResult)
 
     def test_query_a_bad(self) -> None:
         f = self.resolver.query('hgf8g2od29hdohid.com', 'A')
@@ -82,27 +95,27 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryAAAAResult)
+        self.assertIsInstance(result[0], AresQueryAAAAResult)
 
     def test_query_cname(self) -> None:
         f = self.resolver.query('www.amazon.com', 'CNAME')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertIsInstance(result, aiodns.AresQueryCNAMEResult)
+        self.assertIsInstance(result, AresQueryCNAMEResult)
 
     def test_query_mx(self) -> None:
         f = self.resolver.query('google.com', 'MX')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryMXResult)
+        self.assertIsInstance(result[0], AresQueryMXResult)
 
     def test_query_ns(self) -> None:
         f = self.resolver.query('google.com', 'NS')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryNSResult)
+        self.assertIsInstance(result[0], AresQueryNSResult)
 
     @unittest.skipIf(
         sys.platform == 'darwin', 'skipped on Darwin as it is flakey on CI'
@@ -112,27 +125,27 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryTXTResult)
+        self.assertIsInstance(result[0], AresQueryTXTResult)
 
     def test_query_soa(self) -> None:
         f = self.resolver.query('google.com', 'SOA')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertIsInstance(result, aiodns.AresQuerySOAResult)
+        self.assertIsInstance(result, AresQuerySOAResult)
 
     def test_query_srv(self) -> None:
         f = self.resolver.query('_xmpp-server._tcp.jabber.org', 'SRV')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQuerySRVResult)
+        self.assertIsInstance(result[0], AresQuerySRVResult)
 
     def test_query_naptr(self) -> None:
         f = self.resolver.query('sip2sip.info', 'NAPTR')
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryNAPTRResult)
+        self.assertIsInstance(result[0], AresQueryNAPTRResult)
 
     def test_query_ptr(self) -> None:
         ip = '172.253.122.26'
@@ -142,7 +155,7 @@ class DNSTest(unittest.TestCase):
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], aiodns.AresQueryPTRResult)
+        self.assertIsInstance(result[0], AresQueryPTRResult)
 
     def test_query_bad_type(self) -> None:
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')
@@ -185,7 +198,7 @@ class DNSTest(unittest.TestCase):
         f = self.resolver.gethostbyname('google.com', socket.AF_INET)
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertIsInstance(result, aiodns.AresHostResult)
+        self.assertIsInstance(result, AresHostResult)
         self.assertGreater(len(result.addresses), 0)
 
     def test_getaddrinfo_address_family_0(self) -> None:
@@ -859,7 +872,7 @@ async def test_temporary_resolver_not_garbage_collected() -> None:
     # Query should succeed
     assert result
     assert len(result) > 0
-    assert isinstance(result[0], aiodns.AresQueryAResult)
+    assert isinstance(result[0], AresQueryAResult)
 
 
 def test_sock_state_cb_fallback_with_real_query() -> None:
@@ -898,7 +911,7 @@ def test_sock_state_cb_fallback_with_real_query() -> None:
             # Query should succeed
             assert result
             assert len(result) > 0
-            assert isinstance(result[0], aiodns.AresQueryAResult)
+            assert isinstance(result[0], AresQueryAResult)
 
             await resolver.close()
 
@@ -956,7 +969,7 @@ def test_gethostbyname_with_sock_state_cb_fallback() -> None:
             result = await resolver.gethostbyname('google.com', socket.AF_INET)
 
             # Query should succeed
-            assert isinstance(result, aiodns.AresHostResult)
+            assert isinstance(result, AresHostResult)
             assert len(result.addresses) > 0
 
             await resolver.close()
