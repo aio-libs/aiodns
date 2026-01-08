@@ -34,19 +34,6 @@ from .compat import (
 __version__ = '4.0.0'
 
 __all__ = (
-    # Compatibility types for pycares 4.x API
-    'AresHostResult',
-    'AresQueryAAAAResult',
-    'AresQueryAResult',
-    'AresQueryCAAResult',
-    'AresQueryCNAMEResult',
-    'AresQueryMXResult',
-    'AresQueryNAPTRResult',
-    'AresQueryNSResult',
-    'AresQueryPTRResult',
-    'AresQuerySOAResult',
-    'AresQuerySRVResult',
-    'AresQueryTXTResult',
     'DNSResolver',
     'error',
 )
