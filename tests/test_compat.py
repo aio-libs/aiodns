@@ -296,7 +296,8 @@ class TestConvertRecord:
         result = _convert_record(record)
 
         assert isinstance(result, AresQueryTXTResult)
-        assert result.text == b'v=spf1 -all'
+        # ASCII text is decoded to str (pycares 4.x behavior)
+        assert result.text == 'v=spf1 -all'
         assert result.ttl == 300
 
     def test_convert_soa_record(self) -> None:

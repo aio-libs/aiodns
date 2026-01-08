@@ -9,6 +9,7 @@ import sys
 import time
 import unittest
 import unittest.mock
+import warnings
 from typing import Any, cast
 
 import pycares
@@ -195,8 +196,10 @@ class DNSTest(unittest.TestCase):
         self.loop.run_until_complete(coro(self))
 
     def test_gethostbyname(self) -> None:
-        f = self.resolver.gethostbyname('google.com', socket.AF_INET)
-        result = self.loop.run_until_complete(f)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            f = self.resolver.gethostbyname('google.com', socket.AF_INET)
+            result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertIsInstance(result, AresHostResult)
         self.assertGreater(len(result.addresses), 0)
@@ -242,15 +245,19 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
 
     def test_gethostbyname_ipv6(self) -> None:
-        f = self.resolver.gethostbyname('ipv6.google.com', socket.AF_INET6)
-        result = self.loop.run_until_complete(f)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            f = self.resolver.gethostbyname('ipv6.google.com', socket.AF_INET6)
+            result = self.loop.run_until_complete(f)
         self.assertTrue(result)
         self.assertGreater(len(result.addresses), 0)
 
     def test_gethostbyname_bad_family(self) -> None:
-        f = self.resolver.gethostbyname('ipv6.google.com', -1)  # type: ignore[arg-type]
-        with self.assertRaises(aiodns.error.DNSError):
-            self.loop.run_until_complete(f)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            f = self.resolver.gethostbyname('ipv6.google.com', -1)  # type: ignore[arg-type]
+            with self.assertRaises(aiodns.error.DNSError):
+                self.loop.run_until_complete(f)
 
 
 #    def test_query_bad_chars(self) -> None:
@@ -928,7 +935,9 @@ async def test_gethostbyname_cancelled_future() -> None:
     resolver.nameservers = ['192.0.2.1']  # Non-routable
 
     # Start a query
-    fut = resolver.gethostbyname('example.com', socket.AF_INET)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', DeprecationWarning)
+        fut = resolver.gethostbyname('example.com', socket.AF_INET)
 
     # Cancel the future
     fut.cancel()
@@ -966,7 +975,11 @@ def test_gethostbyname_with_sock_state_cb_fallback() -> None:
             assert resolver._event_thread is False
 
             # Perform gethostbyname through the sock_state_cb path
-            result = await resolver.gethostbyname('google.com', socket.AF_INET)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                result = await resolver.gethostbyname(
+                    'google.com', socket.AF_INET
+                )
 
             # Query should succeed
             assert isinstance(result, AresHostResult)
@@ -1092,8 +1105,6 @@ async def test_query_deprecation_warning() -> None:
     resolver = aiodns.DNSResolver(timeout=5.0)
     resolver.nameservers = ['8.8.8.8']
 
-    import warnings
-
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         await resolver.query('google.com', 'A')
@@ -1101,6 +1112,23 @@ async def test_query_deprecation_warning() -> None:
         assert len(w) == 1
         assert issubclass(w[0].category, DeprecationWarning)
         assert 'query() is deprecated' in str(w[0].message)
+
+    await resolver.close()
+
+
+@pytest.mark.asyncio
+async def test_gethostbyname_deprecation_warning() -> None:
+    """Test that gethostbyname() emits deprecation warning."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    resolver.nameservers = ['8.8.8.8']
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+        await resolver.gethostbyname('google.com', socket.AF_INET)
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert 'gethostbyname() is deprecated' in str(w[0].message)
 
     await resolver.close()
 
@@ -1130,8 +1158,6 @@ async def test_compat_txt_returns_str() -> None:
     resolver = aiodns.DNSResolver(timeout=5.0)
     resolver.nameservers = ['8.8.8.8']
 
-    import warnings
-
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', DeprecationWarning)
         result = await resolver.query('google.com', 'TXT')
@@ -1148,8 +1174,6 @@ async def test_compat_naptr_returns_str() -> None:
     """Test deprecated query() NAPTR returns str fields."""
     resolver = aiodns.DNSResolver(timeout=5.0)
     resolver.nameservers = ['8.8.8.8']
-
-    import warnings
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', DeprecationWarning)
@@ -1169,8 +1193,6 @@ async def test_compat_caa_returns_str() -> None:
     """Test deprecated query() CAA returns str fields."""
     resolver = aiodns.DNSResolver(timeout=5.0)
     resolver.nameservers = ['8.8.8.8']
-
-    import warnings
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', DeprecationWarning)
