@@ -34,9 +34,9 @@ from .compat import (
 __version__ = '4.0.0'
 
 __all__ = (
+    # Compatibility types for pycares 4.x API
     'AresHostResult',
     'AresQueryAAAAResult',
-    # Compatibility types for pycares 4.x API
     'AresQueryAResult',
     'AresQueryCAAResult',
     'AresQueryCNAMEResult',
@@ -359,9 +359,14 @@ class DNSResolver:
         """
         Resolve hostname to addresses.
 
-        This is implemented using getaddrinfo as pycares 5.x removed
-        the gethostbyname method.
+        Deprecated: Use getaddrinfo() instead. This is implemented using
+        getaddrinfo as pycares 5.x removed the gethostbyname method.
         """
+        warnings.warn(
+            'gethostbyname() is deprecated, use getaddrinfo() instead',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         fut: asyncio.Future[AresHostResult] = self.loop.create_future()
         cb: Callable[..., None]
         if self._event_thread:
