@@ -19,14 +19,13 @@ Example
     import asyncio
     import aiodns
 
-    loop = asyncio.get_event_loop()
-    resolver = aiodns.DNSResolver(loop=loop)
+    async def main():
+        resolver = aiodns.DNSResolver()
+        result = await resolver.query_dns('google.com', 'A')
+        for record in result.answer:
+            print(record.data.addr)
 
-    async def query(name, query_type):
-        return await resolver.query(name, query_type)
-
-    coro = query('google.com', 'A')
-    result = loop.run_until_complete(coro)
+    asyncio.run(main())
 
 
 The following query types are supported: A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
@@ -37,25 +36,64 @@ API
 
 The API is pretty simple, the following functions are provided in the ``DNSResolver`` class:
 
-* ``query(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
-  instance of ``asyncio.Future``. The actual result of the DNS query is taken directly from pycares.
-  As of version 1.0.0 of aiodns (and pycares, for that matter) results are always namedtuple-like
-  objects with different attributes. Please check the `documentation
-  <http://pycares.readthedocs.org/latest/channel.html#pycares.Channel.query>`_
-  for the result fields.
-* ``gethostbyname(host, socket_family)``: Do a DNS resolution for the given
-  hostname and the desired type of address family (i.e. ``socket.AF_INET``).
-  While ``query()`` always performs a request to a DNS server,
-  ``gethostbyname()`` first looks into ``/etc/hosts`` and thus can resolve
-  local hostnames (such as ``localhost``).  Please check `the documentation
-  <http://pycares.readthedocs.io/latest/channel.html#pycares.Channel.gethostbyname>`_
-  for the result fields. The actual result of the call is a ``asyncio.Future``.
+* ``query_dns(host, type)``: Do a DNS resolution of the given type for the given hostname. It returns an
+  instance of ``asyncio.Future``. The result is a ``pycares.DNSResult`` object with ``answer``,
+  ``authority``, and ``additional`` attributes containing lists of ``pycares.DNSRecord`` objects.
+  Each record has ``type``, ``ttl``, and ``data`` attributes. Check the `pycares documentation
+  <https://pycares.readthedocs.io/>`_ for details on the data attributes for each record type.
+* ``query(host, type)``: **Deprecated** - use ``query_dns()`` instead. This method returns results
+  in a legacy format compatible with aiodns 3.x for backward compatibility.
+* ``gethostbyname(host, socket_family)``: **Deprecated** - use ``getaddrinfo()`` instead.
+  Do a DNS resolution for the given hostname and the desired type of address family
+  (i.e. ``socket.AF_INET``). The actual result of the call is a ``asyncio.Future``.
 * ``gethostbyaddr(name)``: Make a reverse lookup for an address.
+* ``getaddrinfo(host, family, port, proto, type, flags)``: Resolve a host and port into a list of
+  address info entries.
+* ``getnameinfo(sockaddr, flags)``: Resolve a socket address to a host and port.
 * ``cancel()``: Cancel all pending DNS queries. All futures will get ``DNSError`` exception set, with
   ``ARES_ECANCELLED`` errno.
 * ``close()``: Close the resolver. This releases all resources and cancels any pending queries. It must be called
   when the resolver is no longer needed (e.g., application shutdown). The resolver should only be closed from the
   event loop that created the resolver.
+
+
+Migrating from aiodns 3.x
+=========================
+
+aiodns 4.x introduces a new ``query_dns()`` method that returns native pycares 5.x result types.
+See the `pycares documentation <https://pycares.readthedocs.io/latest/channel.html#pycares.Channel.query>`_
+for details on the result types. The old ``query()`` method is deprecated but continues to work
+for backward compatibility.
+
+.. code:: python
+
+    # Old API (deprecated)
+    result = await resolver.query('example.com', 'MX')
+    for record in result:
+        print(record.host, record.priority)
+
+    # New API (recommended)
+    result = await resolver.query_dns('example.com', 'MX')
+    for record in result.answer:
+        print(record.data.exchange, record.data.priority)
+
+
+Future migration to aiodns 5.x
+------------------------------
+
+The temporary ``query_dns()`` naming allows gradual migration without breaking changes:
+
++-----------+---------------------------------------+--------------------------------------------+
+| Version   | ``query()``                           | ``query_dns()``                            |
++===========+=======================================+============================================+
+| **4.x**   | Deprecated, returns compat types      | New API, returns pycares 5.x types         |
++-----------+---------------------------------------+--------------------------------------------+
+| **5.x**   | New API, returns pycares 5.x types    | Alias to ``query()`` for back compat       |
++-----------+---------------------------------------+--------------------------------------------+
+
+In aiodns 5.x, ``query()`` will become the primary API returning native pycares 5.x types,
+and ``query_dns()`` will remain as an alias for backward compatibility. This allows downstream
+projects to migrate at their own pace.
 
 
 Async Context Manager Support
@@ -67,7 +105,7 @@ for scenarios where automatic cleanup is desired:
 .. code:: python
 
     async with aiodns.DNSResolver() as resolver:
-        result = await resolver.query('example.com', 'A')
+        result = await resolver.query_dns('example.com', 'A')
         # resolver.close() is called automatically when exiting the context
 
 **Important**: This pattern is discouraged for most applications because ``DNSResolver`` instances
@@ -101,7 +139,7 @@ This may have other implications for the rest of your codebase, so make sure to 
 Running the test suite
 ======================
 
-To run the test suite: ``python tests.py``
+To run the test suite: ``python -m pytest tests/``
 
 
 Author
