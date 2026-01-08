@@ -63,7 +63,9 @@ Migrating from aiodns 3.x
 =========================
 
 aiodns 4.x introduces a new ``query_dns()`` method that returns native pycares 5.x result types.
-The old ``query()`` method is deprecated but continues to work for backward compatibility.
+See the `pycares documentation <https://pycares.readthedocs.io/latest/channel.html#pycares.Channel.query>`_
+for details on the result types. The old ``query()`` method is deprecated but continues to work
+for backward compatibility.
 
 .. code:: python
 
