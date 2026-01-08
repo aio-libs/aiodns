@@ -139,7 +139,10 @@ class DNSResolver:
                     raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
             except ModuleNotFoundError as ex:
                 raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
-        # Use weak reference to avoid preventing garbage collection
+        # Use weak reference for deterministic cleanup. Without it there's a
+        # reference cycle (DNSResolver -> _channel -> callback -> DNSResolver).
+        # Python 3.4+ can handle cycles with __del__, but weak ref ensures
+        # cleanup happens immediately when last reference is dropped.
         weak_self = weakref.ref(self)
 
         def sock_state_cb_wrapper(
