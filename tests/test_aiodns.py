@@ -155,8 +155,7 @@ class DNSTest(unittest.TestCase):
         )
         result = self.loop.run_until_complete(f)
         self.assertTrue(result)
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], AresQueryPTRResult)
+        self.assertIsInstance(result, AresQueryPTRResult)
 
     def test_query_bad_type(self) -> None:
         self.assertRaises(ValueError, self.resolver.query, 'google.com', 'XXX')

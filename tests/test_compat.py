@@ -453,6 +453,18 @@ class TestConvertResult:
         assert isinstance(result, AresQuerySOAResult)
         assert result.nsname == 'ns1.example.com'
 
+    def test_convert_ptr_query_returns_single_result(self) -> None:
+        data = unittest.mock.MagicMock()
+        data.dname = 'host.example.com'
+
+        records = [make_mock_record(pycares.QUERY_TYPE_PTR, data, ttl=300)]
+        dns_result = make_mock_dns_result(records)
+
+        result = convert_result(dns_result, pycares.QUERY_TYPE_PTR)
+
+        assert isinstance(result, AresQueryPTRResult)
+        assert result.name == 'host.example.com'
+
     def test_convert_filters_by_query_type(self) -> None:
         """Test that convert_result filters out non-matching record types."""
         a_data = unittest.mock.MagicMock()

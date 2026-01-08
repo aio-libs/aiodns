@@ -164,7 +164,7 @@ QueryResult = Union[
     list[AresQuerySRVResult],
     list[AresQueryNAPTRResult],
     list[AresQueryCAAResult],
-    list[AresQueryPTRResult],
+    AresQueryPTRResult,
     list[ConvertedRecord],  # For ANY query type
 ]
 
@@ -259,8 +259,12 @@ def convert_result(dns_result: pycares.DNSResult, qtype: int) -> QueryResult:
 
         converted = _convert_record(record)
 
-        # CNAME and SOA return single result, not list
-        if record_type in (pycares.QUERY_TYPE_CNAME, pycares.QUERY_TYPE_SOA):
+        # CNAME, SOA, and PTR return single result, not list
+        if record_type in (
+            pycares.QUERY_TYPE_CNAME,
+            pycares.QUERY_TYPE_SOA,
+            pycares.QUERY_TYPE_PTR,
+        ):
             return cast(QueryResult, converted)
 
         results.append(converted)
