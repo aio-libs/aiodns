@@ -180,27 +180,27 @@ class TestResultDataclasses:
         result = AresQueryNAPTRResult(
             order=100,
             preference=10,
-            flags=b'S',
-            service=b'SIP+D2U',
-            regex=b'',
+            flags='S',
+            service='SIP+D2U',
+            regex='',
             replacement='_sip._udp.example.com',
             ttl=300,
         )
         assert result.order == 100
         assert result.preference == 10
-        assert result.flags == b'S'
-        assert result.service == b'SIP+D2U'
-        assert result.regex == b''
+        assert result.flags == 'S'
+        assert result.service == 'SIP+D2U'
+        assert result.regex == ''
         assert result.replacement == '_sip._udp.example.com'
         assert result.ttl == 300
 
     def test_ares_query_caa_result(self) -> None:
         result = AresQueryCAAResult(
-            critical=0, property='issue', value=b'letsencrypt.org', ttl=300
+            critical=0, property='issue', value='letsencrypt.org', ttl=300
         )
         assert result.critical == 0
         assert result.property == 'issue'
-        assert result.value == b'letsencrypt.org'
+        assert result.value == 'letsencrypt.org'
         assert result.ttl == 300
 
     def test_ares_query_ptr_result(self) -> None:
@@ -354,9 +354,9 @@ class TestConvertRecord:
         assert isinstance(result, AresQueryNAPTRResult)
         assert result.order == 100
         assert result.preference == 10
-        assert result.flags == b'S'
-        assert result.service == b'SIP+D2U'
-        assert result.regex == b'!^.*$!sip:info@example.com!'
+        assert result.flags == 'S'
+        assert result.service == 'SIP+D2U'
+        assert result.regex == '!^.*$!sip:info@example.com!'
         assert result.replacement == '_sip._udp.example.com'
         assert result.ttl == 300
 
@@ -372,7 +372,7 @@ class TestConvertRecord:
         assert isinstance(result, AresQueryCAAResult)
         assert result.critical == 0
         assert result.property == 'issue'
-        assert result.value == b'letsencrypt.org'
+        assert result.value == 'letsencrypt.org'
         assert result.ttl == 300
 
     def test_convert_ptr_record(self) -> None:
