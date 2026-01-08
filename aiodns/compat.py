@@ -13,6 +13,14 @@ from typing import Union, cast
 import pycares
 
 
+def _maybe_str(data: bytes) -> str | bytes:
+    """Decode bytes as ASCII, return bytes if decode fails (pycares 4.x)."""
+    try:
+        return data.decode('ascii')
+    except UnicodeDecodeError:
+        return data
+
+
 @dataclass(frozen=True, slots=True)
 class AresQueryAResult:
     """A record result (compatible with pycares 4.x ares_query_a_result)."""
@@ -58,7 +66,7 @@ class AresQueryNSResult:
 class AresQueryTXTResult:
     """TXT record result (pycares 4.x compat)."""
 
-    text: bytes
+    text: str | bytes  # str if ASCII, bytes otherwise (pycares 4.x behavior)
     ttl: int
 
 
@@ -93,9 +101,9 @@ class AresQueryNAPTRResult:
 
     order: int
     preference: int
-    flags: bytes
-    service: bytes
-    regex: bytes
+    flags: str
+    service: str
+    regex: str
     replacement: str
     ttl: int
 
@@ -106,7 +114,7 @@ class AresQueryCAAResult:
 
     critical: int
     property: str
-    value: bytes
+    value: str
     ttl: int
 
 
@@ -185,7 +193,7 @@ def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
         return AresQueryNSResult(host=ns_data.nsdname, ttl=ttl)
     if record_type == pycares.QUERY_TYPE_TXT:
         txt_data = cast(pycares.TXTRecordData, record.data)
-        return AresQueryTXTResult(text=txt_data.data, ttl=ttl)
+        return AresQueryTXTResult(text=_maybe_str(txt_data.data), ttl=ttl)
     if record_type == pycares.QUERY_TYPE_SOA:
         soa_data = cast(pycares.SOARecordData, record.data)
         return AresQuerySOAResult(
@@ -212,9 +220,9 @@ def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
         return AresQueryNAPTRResult(
             order=naptr_data.order,
             preference=naptr_data.preference,
-            flags=naptr_data.flags.encode(),
-            service=naptr_data.service.encode(),
-            regex=naptr_data.regexp.encode(),
+            flags=naptr_data.flags,
+            service=naptr_data.service,
+            regex=naptr_data.regexp,
             replacement=naptr_data.replacement,
             ttl=ttl,
         )
@@ -223,7 +231,7 @@ def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
         return AresQueryCAAResult(
             critical=caa_data.critical,
             property=caa_data.tag,
-            value=caa_data.value.encode(),
+            value=caa_data.value,
             ttl=ttl,
         )
     if record_type == pycares.QUERY_TYPE_PTR:
