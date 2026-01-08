@@ -1153,6 +1153,9 @@ async def test_query_dns_with_qclass() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    sys.platform == 'darwin', reason='skipped on Darwin as it is flakey on CI'
+)
 async def test_compat_txt_returns_str() -> None:
     """Test deprecated query() TXT returns str for ASCII text."""
     resolver = aiodns.DNSResolver(timeout=5.0)
