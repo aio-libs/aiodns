@@ -46,4 +46,3 @@ include = ["aiodns*"]
 
 [project.urls]
     repository = "https://github.com/aio-libs/aiodns.git"
-
