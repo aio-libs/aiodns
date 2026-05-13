@@ -41,7 +41,6 @@ requires = ["setuptools", "pycares"]
 include-package-data = false
 
 [tool.setuptools.packages.find]
-# Optional: Explicitly exclude test packages using glob patterns
 exclude = ["tests*", "test_*"]
 include = ["aiodns*"]
 
