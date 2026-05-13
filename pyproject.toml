@@ -2,7 +2,7 @@
 name = "aiodns"
 dynamic = ["version"]
 requires-python = ">=3.10"
-readme.content-type = "rst"
+readme.content-type = "text/x-rst"
 readme.file = "README.rst"
 description = "Simple DNS resolver for asyncio"
 authors = [
