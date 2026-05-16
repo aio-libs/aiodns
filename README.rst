@@ -142,6 +142,39 @@ Running the test suite
 To run the test suite: ``python -m pytest tests/``
 
 
+Releasing (maintainers only)
+============================
+
+Releases are cut from ``master`` and published to PyPI automatically by the
+``Release Wheels`` workflow when a GitHub Release is created.
+
+1. **Prepare the release PR.** Bump ``__version__`` in ``aiodns/__init__.py``
+   and prepend a section to ``ChangeLog`` describing the user-facing changes
+   since the previous tag, in the same RST style as the existing entries
+   (``X.Y.Z`` header underlined with ``=``). Open the PR with the title
+   ``Release X.Y.Z`` and merge it once CI is green.
+
+2. **Tag and publish the release.** From a clean checkout of ``master`` that
+   includes the merged release PR, generate the release notes from
+   ``ChangeLog`` and create the GitHub release in one shot::
+
+       python scripts/release-notes.py --target X.Y.Z \
+           | gh release create vX.Y.Z --repo aio-libs/aiodns \
+                 --title vX.Y.Z --notes-file -
+
+   The helper script reads ``__version__`` and the topmost ``ChangeLog``
+   section and aborts non-zero if they disagree, or if ``--target`` does
+   not match the current state on disk, so you can't accidentally publish
+   notes for a version the release PR hasn't actually landed yet.
+
+3. **Watch the wheel build.** Publishing the GitHub release fires
+   ``release-wheels.yml``, which builds wheels + sdist and pushes them to
+   `PyPI <https://pypi.org/project/aiodns/>`_ via trusted publishing
+   (no token required). Confirm the run succeeds::
+
+       gh run list --repo aio-libs/aiodns --workflow release-wheels.yml --limit 1
+
+
 Author
 ======
 
