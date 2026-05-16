@@ -36,6 +36,7 @@ version = {attr = "aiodns.__version__"}
 [build-system]
 # pycares required because of the fact that it's in the __init__ module
 requires = ["setuptools", "pycares"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 # Disables inclusion of non-package data (like tests) in the wheel if they are in the sdist
