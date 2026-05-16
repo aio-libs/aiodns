@@ -1438,9 +1438,8 @@ def _call_resolver_entry_point(
         return resolver.getaddrinfo('host')
     if channel_method == 'getnameinfo':
         return resolver.getnameinfo(('127.0.0.1', 0))
-    if channel_method == 'gethostbyaddr':
-        return resolver.gethostbyaddr('127.0.0.1')
-    raise AssertionError(f'unknown entry point: {channel_method}')
+    assert channel_method == 'gethostbyaddr'
+    return resolver.gethostbyaddr('127.0.0.1')
 
 
 @pytest.mark.asyncio
