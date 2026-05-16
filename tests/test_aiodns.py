@@ -1431,6 +1431,42 @@ async def test_query_malformed_name_routes_through_future() -> None:
         await _assert_malformed_name_routes_through_future(fut)
 
 
+def _call_resolver_entry_point(
+    resolver: aiodns.DNSResolver, channel_method: str
+) -> asyncio.Future[Any]:
+    if channel_method == 'getaddrinfo':
+        return resolver.getaddrinfo('host')
+    if channel_method == 'getnameinfo':
+        return resolver.getnameinfo(('127.0.0.1', 0))
+    if channel_method == 'gethostbyaddr':
+        return resolver.gethostbyaddr('127.0.0.1')
+    raise AssertionError(f'unknown entry point: {channel_method}')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'channel_method', ['getaddrinfo', 'getnameinfo', 'gethostbyaddr']
+)
+async def test_wrapped_entry_points_route_sync_ares_error(
+    channel_method: str,
+) -> None:
+    """Each wrapper routes a synchronous AresError to the returned future.
+
+    pycares does not currently validate inputs to these entry points
+    synchronously, so we inject an AresError via mock to prove the
+    wrapper is wired up and would not regress to a sync raise.
+    """
+    async with aiodns.DNSResolver() as resolver:
+        exc = pycares.AresError(
+            aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
+        )
+        with unittest.mock.patch.object(
+            resolver._channel, channel_method, side_effect=exc
+        ):
+            fut = _call_resolver_entry_point(resolver, channel_method)
+        await _assert_malformed_name_routes_through_future(fut)
+
+
 @pytest.mark.asyncio
 async def test_capture_ares_error_leaves_done_future_untouched() -> None:
     """When the callback already finished the future, the captured

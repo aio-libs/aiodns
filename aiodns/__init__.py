@@ -159,6 +159,9 @@ class DNSResolver:
     def _callback(
         self, fut: asyncio.Future[_T], result: _T, errorno: int | None
     ) -> None:
+        # The future can already be done if pycares raised synchronously
+        # and _capture_ares_error set the exception before c-ares delivered
+        # the same error through this callback.
         if fut.done():
             return
         if errorno is not None:
@@ -192,6 +195,7 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for query that converts results to compatible format."""
+        # See _callback for why we guard on done() rather than cancelled().
         if fut.done():
             return
         if errorno is not None:
@@ -227,9 +231,12 @@ class DNSResolver:
         try:
             yield
         except pycares.AresError as exc:
-            if fut.done() or not exc.args:
+            if fut.done():
                 return
-            errno = exc.args[0]
+            # pycares always raises (errno, message), but be defensive:
+            # an args-less AresError should still resolve the future to
+            # avoid an indefinite hang on `await`.
+            errno = exc.args[0] if exc.args else error.ARES_EFORMERR
             fut.set_exception(
                 error.DNSError(errno, pycares.errno.strerror(errno))
             )
@@ -343,6 +350,7 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for gethostbyname that converts AddrInfoResult."""
+        # See _callback for why we guard on done() rather than cancelled().
         if fut.done():
             return
         if errorno is not None:
