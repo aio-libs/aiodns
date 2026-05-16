@@ -219,7 +219,7 @@ class DNSResolver:
         return future, cb
 
     @contextlib.contextmanager
-    def _capture_ares_error(self, fut: asyncio.Future[Any]) -> Iterator[None]:
+    def _capture_ares_error(self, fut: asyncio.Future[_T]) -> Iterator[None]:
         # When pycares raises synchronously (e.g. ARES_EBADNAME for a
         # malformed hostname), c-ares may also invoke the callback first,
         # leaving the future already done. Route the error through the
