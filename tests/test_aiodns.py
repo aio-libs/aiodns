@@ -1398,5 +1398,50 @@ async def test_query_callback_error() -> None:
     resolver._closed = True
 
 
+@pytest.mark.asyncio
+async def test_query_dns_malformed_name_returns_future() -> None:
+    """A synchronous pycares.AresError must be routed through the future.
+
+    Regression test for https://github.com/aio-libs/aiodns/issues/231.
+    Previously, a malformed name caused query_dns() to raise AresError
+    synchronously, leaving the internally-created future orphaned with
+    an unretrieved exception.
+    """
+    async with aiodns.DNSResolver() as resolver:
+        fut = resolver.query_dns('example test.com', 'A')
+        assert isinstance(fut, asyncio.Future)
+        with pytest.raises(aiodns.error.DNSError) as exc_info:
+            await fut
+        assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
+
+
+@pytest.mark.asyncio
+async def test_query_malformed_name_returns_future() -> None:
+    """query() must also route AresError through the future."""
+    async with aiodns.DNSResolver() as resolver:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            fut = resolver.query('example test.com', 'A')
+        assert isinstance(fut, asyncio.Future)
+        with pytest.raises(aiodns.error.DNSError) as exc_info:
+            await fut
+        assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
+
+
+@pytest.mark.asyncio
+async def test_query_dns_original_issue_example() -> None:
+    """Verify the exact example from issue #231 outputs only 'Error'."""
+    messages: list[str] = []
+
+    async with aiodns.DNSResolver() as resolver:
+        try:
+            query = resolver.query_dns('example test.com', 'A')
+            await query
+        except aiodns.error.DNSError:
+            messages.append('Error')
+
+    assert messages == ['Error']
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)
