@@ -1398,49 +1398,54 @@ async def test_query_callback_error() -> None:
     resolver._closed = True
 
 
-@pytest.mark.asyncio
-async def test_query_dns_malformed_name_returns_future() -> None:
-    """A synchronous pycares.AresError must be routed through the future.
+async def _assert_malformed_name_routes_through_future(
+    fut: asyncio.Future[Any],
+) -> None:
+    assert isinstance(fut, asyncio.Future)
+    with pytest.raises(aiodns.error.DNSError) as exc_info:
+        await fut
+    assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
 
-    Regression test for https://github.com/aio-libs/aiodns/issues/231.
-    Previously, a malformed name caused query_dns() to raise AresError
-    synchronously, leaving the internally-created future orphaned with
-    an unretrieved exception.
+
+@pytest.mark.asyncio
+async def test_query_dns_malformed_name_routes_through_future() -> None:
+    """Synchronous pycares.AresError must be routed through the future.
+
+    Regression test for https://github.com/aio-libs/aiodns/issues/231:
+    previously a malformed name raised AresError synchronously, leaving
+    the internally-created future orphaned with an unretrieved exception.
     """
     async with aiodns.DNSResolver() as resolver:
-        fut = resolver.query_dns('example test.com', 'A')
-        assert isinstance(fut, asyncio.Future)
-        with pytest.raises(aiodns.error.DNSError) as exc_info:
-            await fut
-        assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
+        await _assert_malformed_name_routes_through_future(
+            resolver.query_dns('example test.com', 'A')
+        )
 
 
 @pytest.mark.asyncio
-async def test_query_malformed_name_returns_future() -> None:
-    """query() must also route AresError through the future."""
+async def test_query_malformed_name_routes_through_future() -> None:
+    """Same as above for the deprecated query() entry point."""
     async with aiodns.DNSResolver() as resolver:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', DeprecationWarning)
             fut = resolver.query('example test.com', 'A')
-        assert isinstance(fut, asyncio.Future)
-        with pytest.raises(aiodns.error.DNSError) as exc_info:
-            await fut
-        assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
+        await _assert_malformed_name_routes_through_future(fut)
 
 
 @pytest.mark.asyncio
-async def test_query_dns_original_issue_example() -> None:
-    """Verify the exact example from issue #231 outputs only 'Error'."""
-    messages: list[str] = []
-
+async def test_capture_ares_error_leaves_done_future_untouched() -> None:
+    """When the callback already finished the future, the captured
+    AresError must be discarded so the original result is preserved."""
     async with aiodns.DNSResolver() as resolver:
-        try:
-            query = resolver.query_dns('example test.com', 'A')
-            await query
-        except aiodns.error.DNSError:
-            messages.append('Error')
-
-    assert messages == ['Error']
+        fut: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        fut.set_result(None)
+        exc = pycares.AresError(
+            aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
+        )
+        cm = resolver._capture_ares_error(fut)
+        cm.__enter__()
+        suppressed = cm.__exit__(type(exc), exc, exc.__traceback__)
+        assert suppressed
+        assert fut.result() is None
 
 
 if __name__ == '__main__':  # pragma: no cover
