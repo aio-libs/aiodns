@@ -1,3 +1,7 @@
+4.0.3
+=====
+- Restore license metadata that was dropped during the ``pyproject.toml`` migration in #244, so packaging tools again detect aiodns as MIT-licensed (#250).
+
 4.0.2
 =====
 - Re-release of 4.0.1; the 4.0.1 wheel build failed because the release workflow still invoked ``python setup.py`` after #244 removed ``setup.py``, so 4.0.1 never reached PyPI. The release workflow now uses ``python -m build`` (#248).
