@@ -1,3 +1,7 @@
+4.0.2
+=====
+- Re-release of 4.0.1; the 4.0.1 wheel build failed because the release workflow still invoked ``python setup.py`` after #244 removed ``setup.py``, so 4.0.1 never reached PyPI. The release workflow now uses ``python -m build`` (#248).
+
 4.0.1
 =====
 - Fix ``Future exception was never retrieved`` when pycares raises ``AresError`` synchronously, e.g. for malformed hostnames (#245, fixes #231)
