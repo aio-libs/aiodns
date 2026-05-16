@@ -227,11 +227,12 @@ class DNSResolver:
         try:
             yield
         except pycares.AresError as exc:
-            if fut.done():
+            if fut.done() or not exc.args:
                 return
             errno = exc.args[0]
-            message = exc.args[1] if len(exc.args) > 1 else ''
-            fut.set_exception(error.DNSError(errno, message))
+            fut.set_exception(
+                error.DNSError(errno, pycares.errno.strerror(errno))
+            )
 
     @overload
     def query(

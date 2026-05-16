@@ -1441,10 +1441,15 @@ async def test_capture_ares_error_leaves_done_future_untouched() -> None:
         exc = pycares.AresError(
             aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
         )
-        cm = resolver._capture_ares_error(fut)
-        cm.__enter__()
-        suppressed = cm.__exit__(type(exc), exc, exc.__traceback__)
-        assert suppressed
+        propagated = False
+        try:
+            with resolver._capture_ares_error(fut):
+                raise exc
+        except pycares.AresError:
+            propagated = True
+        assert not propagated, (
+            'context manager should have swallowed AresError'
+        )
         assert fut.result() is None
 
 
