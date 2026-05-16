@@ -1,3 +1,16 @@
+4.0.1
+=====
+- Fix ``Future exception was never retrieved`` when pycares raises ``AresError`` synchronously, e.g. for malformed hostnames (#245, fixes #231)
+- Modernized package setup using ``pyproject.toml`` instead of ``setup.py`` (#244)
+- Updated dependencies
+  - Bumped mypy from 1.19.1 to 2.1.0 (#236, #239, #241, #242)
+  - Bumped pytest from 9.0.2 to 9.0.3 (#237)
+  - Bumped pytest-cov from 7.0.0 to 7.1.0 (#232)
+  - Bumped dependabot/fetch-metadata from 2.4.0 to 3.1.0 (#227, #234, #240)
+  - Bumped actions/download-artifact from 7.0.0 to 8.0.1 (#228, #235)
+  - Bumped actions/upload-artifact from 6 to 7 (#229)
+  - Bumped codecov/codecov-action from 5 to 6 (#233)
+
 4.0.0
 =====
 - **Breaking change**: Requires pycares >= 5.0.0
