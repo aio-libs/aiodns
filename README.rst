@@ -154,6 +154,9 @@ Releases are cut from ``master`` and published to PyPI automatically by the
    (``X.Y.Z`` header underlined with ``=``). Open the PR with the title
    ``Release X.Y.Z`` and merge it once CI is green.
 
+   Skip Dependabot bumps for dev tooling and CI actions; keep runtime
+   dependency bumps such as ``pycares``.
+
 2. **Tag and publish the release.** From a clean checkout of ``master`` that
    includes the merged release PR, generate the release notes from
    ``ChangeLog`` and create the GitHub release in one shot::
