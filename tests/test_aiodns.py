@@ -1434,23 +1434,16 @@ async def test_query_malformed_name_routes_through_future() -> None:
 @pytest.mark.asyncio
 async def test_capture_ares_error_leaves_done_future_untouched() -> None:
     """When the callback already finished the future, the captured
-    AresError must be discarded so the original result is preserved."""
+    AresError must be discarded; reaching the body of the context
+    manager would call set_exception() on a done future and raise
+    InvalidStateError, so passing through cleanly is the assertion."""
     async with aiodns.DNSResolver() as resolver:
         fut: asyncio.Future[None] = asyncio.get_running_loop().create_future()
         fut.set_result(None)
-        exc = pycares.AresError(
-            aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
-        )
-        propagated = False
-        try:
-            with resolver._capture_ares_error(fut):
-                raise exc
-        except pycares.AresError:
-            propagated = True
-        assert not propagated, (
-            'context manager should have swallowed AresError'
-        )
-        assert fut.result() is None
+        with resolver._capture_ares_error(fut):
+            raise pycares.AresError(
+                aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
+            )
 
 
 if __name__ == '__main__':  # pragma: no cover
