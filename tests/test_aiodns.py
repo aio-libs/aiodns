@@ -1398,6 +1398,24 @@ async def test_query_callback_error() -> None:
     resolver._closed = True
 
 
+@pytest.mark.asyncio
+async def test_query_callback_empty_result_raises_enodata() -> None:
+    """convert_result raising must route through fut.set_exception."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[Any] = asyncio.get_event_loop().create_future()
+
+    empty = unittest.mock.MagicMock(spec=pycares.DNSResult)
+    empty.answer = []
+
+    resolver._query_callback(fut, pycares.QUERY_TYPE_PTR, empty, None)
+
+    with pytest.raises(aiodns.error.DNSError) as exc_info:
+        fut.result()
+    assert exc_info.value.args[0] == pycares.errno.ARES_ENODATA
+
+    resolver._closed = True
+
+
 async def _assert_malformed_name_routes_through_future(
     fut: asyncio.Future[Any],
 ) -> None:
