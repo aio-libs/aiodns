@@ -1,3 +1,8 @@
+4.0.4
+=====
+- Raise ``DNSError(ARES_ENODATA)`` from ``query()`` when the answer section has no records of the requested qtype, restoring the pycares 4.x NODATA contract and avoiding ``AttributeError`` for CNAME/SOA/PTR callers (#254).
+- Add the missing ``build-backend`` entry to ``pyproject.toml`` so PEP 517 builds from the sdist work without falling back to the deprecated legacy setuptools backend (#252).
+
 4.0.3
 =====
 - Restore license metadata that was dropped during the ``pyproject.toml`` migration in #244, so packaging tools again detect aiodns as MIT-licensed (#250).

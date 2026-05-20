@@ -32,7 +32,7 @@ from .compat import (
     convert_result,
 )
 
-__version__ = '4.0.3'
+__version__ = '4.0.4'
 
 __all__ = (
     'DNSResolver',
