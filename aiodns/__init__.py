@@ -202,8 +202,13 @@ class DNSResolver:
             fut.set_exception(
                 error.DNSError(errorno, pycares.errno.strerror(errorno))
             )
+            return
+        try:
+            converted = convert_result(result, qtype)
+        except error.DNSError as exc:
+            fut.set_exception(exc)
         else:
-            fut.set_result(convert_result(result, qtype))
+            fut.set_result(converted)
 
     def _get_query_future_callback(
         self, qtype: int

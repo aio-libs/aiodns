@@ -9,6 +9,7 @@ from typing import Any
 import pycares
 import pytest
 
+from aiodns import error
 from aiodns.compat import (
     AresHostResult,
     AresQueryAAAAResult,
@@ -506,11 +507,51 @@ class TestConvertResult:
         assert isinstance(result[0], AresQueryAResult)
         assert isinstance(result[1], AresQueryMXResult)
 
-    def test_convert_empty_result(self) -> None:
-        """Test conversion of empty DNS result."""
+    @pytest.mark.parametrize(
+        'qtype',
+        [
+            pycares.QUERY_TYPE_A,
+            pycares.QUERY_TYPE_AAAA,
+            pycares.QUERY_TYPE_CAA,
+            pycares.QUERY_TYPE_CNAME,
+            pycares.QUERY_TYPE_MX,
+            pycares.QUERY_TYPE_NAPTR,
+            pycares.QUERY_TYPE_NS,
+            pycares.QUERY_TYPE_PTR,
+            pycares.QUERY_TYPE_SOA,
+            pycares.QUERY_TYPE_SRV,
+            pycares.QUERY_TYPE_TXT,
+        ],
+    )
+    def test_convert_empty_result_raises_enodata(self, qtype: int) -> None:
+        """NOERROR/NODATA must raise ARES_ENODATA; see aiodns_bug.md."""
         dns_result = make_mock_dns_result([])
 
-        result = convert_result(dns_result, pycares.QUERY_TYPE_A)
+        with pytest.raises(error.DNSError) as exc_info:
+            convert_result(dns_result, qtype)
 
-        assert isinstance(result, list)
-        assert len(result) == 0
+        assert exc_info.value.args[0] == pycares.errno.ARES_ENODATA
+
+    def test_convert_ptr_with_only_non_ptr_records_raises_enodata(
+        self,
+    ) -> None:
+        """PTR query whose answer carries only a CNAME chain must raise."""
+        cname_data = unittest.mock.MagicMock()
+        cname_data.cname = 'alias.example.com'
+        records = [
+            make_mock_record(pycares.QUERY_TYPE_CNAME, cname_data, ttl=300),
+        ]
+        dns_result = make_mock_dns_result(records)
+
+        with pytest.raises(error.DNSError) as exc_info:
+            convert_result(dns_result, pycares.QUERY_TYPE_PTR)
+
+        assert exc_info.value.args[0] == pycares.errno.ARES_ENODATA
+
+    def test_convert_any_empty_result_returns_empty_list(self) -> None:
+        """ANY is always list-shaped, so empty stays empty (no raise)."""
+        dns_result = make_mock_dns_result([])
+
+        result = convert_result(dns_result, pycares.QUERY_TYPE_ANY)
+
+        assert result == []
