@@ -12,6 +12,16 @@ from typing import Union, cast
 
 import pycares
 
+from . import error
+
+_SINGLE_RESULT_QTYPES = frozenset(
+    {
+        pycares.QUERY_TYPE_CNAME,
+        pycares.QUERY_TYPE_SOA,
+        pycares.QUERY_TYPE_PTR,
+    }
+)
+
 
 def _maybe_str(data: bytes) -> str | bytes:
     """Decode bytes as ASCII, return bytes if decode fails (pycares 4.x)."""
@@ -260,13 +270,19 @@ def convert_result(dns_result: pycares.DNSResult, qtype: int) -> QueryResult:
         converted = _convert_record(record)
 
         # CNAME, SOA, and PTR return single result, not list
-        if record_type in (
-            pycares.QUERY_TYPE_CNAME,
-            pycares.QUERY_TYPE_SOA,
-            pycares.QUERY_TYPE_PTR,
-        ):
+        if record_type in _SINGLE_RESULT_QTYPES:
             return cast(QueryResult, converted)
 
         results.append(converted)
+
+    # NOERROR/NODATA: c-ares delivered ARES_SUCCESS but the answer has no
+    # records of the queried type. pycares 4.x raised ARES_ENODATA here;
+    # without this branch single-result qtypes (CNAME/SOA/PTR) would
+    # resolve to [] and crash callers reading .name/.cname/.nsname.
+    if not results:
+        raise error.DNSError(
+            pycares.errno.ARES_ENODATA,
+            pycares.errno.strerror(pycares.errno.ARES_ENODATA),
+        )
 
     return results
