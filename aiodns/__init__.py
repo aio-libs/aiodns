@@ -41,8 +41,8 @@ __all__ = (
 _T = TypeVar('_T')
 
 WINDOWS_SELECTOR_ERR_MSG = (
-    'aiodns needs a SelectorEventLoop on Windows. See more: '
-    'https://github.com/aio-libs/aiodns#note-for-windows-users'
+    'ProactorEventLoop will not work with aiodns on Windows without event '
+    'threads. See more: https://github.com/aio-libs/aiodns#note-for-windows-users'
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,17 +115,13 @@ class DNSResolver:
                     'Falling back to socket state callback: %s',
                     e,
                 )
-        # Fall back to sock_state_cb (needs SelectorEventLoop on Windows)
-        if sys.platform == 'win32' and not isinstance(
-            self.loop, asyncio.SelectorEventLoop
+        # Fall back to sock_state_cb
+        # We cannot use a ProactorEventLoop because it does not
+        # provide an add_reader or add_writer function to utilize.
+        if sys.platform == 'win32' and isinstance(
+            self.loop, asyncio.ProactorEventLoop
         ):
-            try:
-                import winloop
-
-                if not isinstance(self.loop, winloop.Loop):
-                    raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
-            except ModuleNotFoundError as ex:
-                raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG) from ex
+            raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
         # Use weak reference for deterministic cleanup. Without it there's a
         # reference cycle (DNSResolver -> _channel -> callback -> DNSResolver).
         # Python 3.4+ can handle cycles with __del__, but weak ref ensures
