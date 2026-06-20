@@ -367,7 +367,7 @@ class TestUV_QueryTimeout(TestQueryTimeout):
 
 
 @unittest.skipIf(sys.platform != 'win32', 'Only run on Windows')
-def test_win32_innaproperate_event_loop() -> None:
+def test_win32_inapproperate_event_loop() -> None:
     """Test DNSResolver with Windows with inapproperate eventloop.
 
     With pycares 5, event_thread is used by default. The SelectorEventLoop
@@ -376,9 +376,7 @@ def test_win32_innaproperate_event_loop() -> None:
     """
     # Create a ProactorEventLoop to trigger the error
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
-    mock_loop.__class__ = (
-        asyncio.ProactorEventLoop  # type: ignore[assignment]
-    )
+    mock_loop.__class__ = asyncio.ProactorEventLoop
 
     # Mock channel creation to fail on first call (event_thread),
     # triggering the fallback path where SelectorEventLoop is required
