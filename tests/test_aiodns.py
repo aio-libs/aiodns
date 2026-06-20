@@ -1269,5 +1269,106 @@ async def test_query_callback_error() -> None:
     resolver._closed = True
 
 
+@pytest.mark.asyncio
+async def test_query_callback_empty_result_raises_enodata() -> None:
+    """convert_result raising must route through fut.set_exception."""
+    resolver = aiodns.DNSResolver(timeout=5.0)
+    fut: asyncio.Future[Any] = asyncio.get_event_loop().create_future()
+
+    empty = unittest.mock.MagicMock(spec=pycares.DNSResult)
+    empty.answer = []
+
+    resolver._query_callback(fut, pycares.QUERY_TYPE_PTR, empty, None)
+
+    with pytest.raises(aiodns.error.DNSError) as exc_info:
+        fut.result()
+    assert exc_info.value.args[0] == pycares.errno.ARES_ENODATA
+
+    resolver._closed = True
+
+
+async def _assert_malformed_name_routes_through_future(
+    fut: asyncio.Future[Any],
+) -> None:
+    assert isinstance(fut, asyncio.Future)
+    with pytest.raises(aiodns.error.DNSError) as exc_info:
+        await fut
+    assert exc_info.value.args[0] == aiodns.error.ARES_EBADNAME
+
+
+@pytest.mark.asyncio
+async def test_query_dns_malformed_name_routes_through_future() -> None:
+    """Synchronous pycares.AresError must be routed through the future.
+
+    Regression test for https://github.com/aio-libs/aiodns/issues/231:
+    previously a malformed name raised AresError synchronously, leaving
+    the internally-created future orphaned with an unretrieved exception.
+    """
+    async with aiodns.DNSResolver() as resolver:
+        await _assert_malformed_name_routes_through_future(
+            resolver.query_dns('example test.com', 'A')
+        )
+
+
+@pytest.mark.asyncio
+async def test_query_malformed_name_routes_through_future() -> None:
+    """Same as above for the deprecated query() entry point."""
+    async with aiodns.DNSResolver() as resolver:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            fut = resolver.query('example test.com', 'A')
+        await _assert_malformed_name_routes_through_future(fut)
+
+
+def _call_resolver_entry_point(
+    resolver: aiodns.DNSResolver, channel_method: str
+) -> asyncio.Future[Any]:
+    if channel_method == 'getaddrinfo':
+        return resolver.getaddrinfo('host')
+    if channel_method == 'getnameinfo':
+        return resolver.getnameinfo(('127.0.0.1', 0))
+    assert channel_method == 'gethostbyaddr'
+    return resolver.gethostbyaddr('127.0.0.1')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'channel_method', ['getaddrinfo', 'getnameinfo', 'gethostbyaddr']
+)
+async def test_wrapped_entry_points_route_sync_ares_error(
+    channel_method: str,
+) -> None:
+    """Each wrapper routes a synchronous AresError to the returned future.
+
+    pycares does not currently validate inputs to these entry points
+    synchronously, so we inject an AresError via mock to prove the
+    wrapper is wired up and would not regress to a sync raise.
+    """
+    async with aiodns.DNSResolver() as resolver:
+        exc = pycares.AresError(
+            aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
+        )
+        with unittest.mock.patch.object(
+            resolver._channel, channel_method, side_effect=exc
+        ):
+            fut = _call_resolver_entry_point(resolver, channel_method)
+        await _assert_malformed_name_routes_through_future(fut)
+
+
+@pytest.mark.asyncio
+async def test_capture_ares_error_leaves_done_future_untouched() -> None:
+    """When the callback already finished the future, the captured
+    AresError must be discarded; reaching the body of the context
+    manager would call set_exception() on a done future and raise
+    InvalidStateError, so passing through cleanly is the assertion."""
+    async with aiodns.DNSResolver() as resolver:
+        fut: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        fut.set_result(None)
+        with resolver._capture_ares_error(fut):
+            raise pycares.AresError(
+                aiodns.error.ARES_EBADNAME, 'Misformatted domain name'
+            )
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)

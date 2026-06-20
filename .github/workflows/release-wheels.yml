@@ -16,9 +16,9 @@ jobs:
         name: Install Python
         with:
           python-version: '3.13'
-      - run: pip install setuptools wheel
+      - run: pip install build
       - name: Build wheels
-        run: python setup.py bdist_wheel
+        run: python -m build --wheel
       - uses: actions/upload-artifact@v7
         with:
           path: dist/*.whl
@@ -33,9 +33,9 @@ jobs:
         name: Install Python
         with:
           python-version: '3.13'
-      - run: pip install setuptools
+      - run: pip install build
       - name: Build sdist
-        run: python setup.py sdist
+        run: python -m build --sdist
       - uses: actions/upload-artifact@v7
         with:
           path: dist/*.tar.gz
@@ -54,7 +54,7 @@ jobs:
     # upload to PyPI when a GitHub Release is created
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v8.0.0
+      - uses: actions/download-artifact@v8.0.1
         with:
           pattern: artifact-*
           path: dist

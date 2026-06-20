@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import functools
 import logging
 import socket
 import sys
 import warnings
 import weakref
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -31,7 +32,7 @@ from .compat import (
     convert_result,
 )
 
-__version__ = '4.0.0'
+__version__ = '4.0.4'
 
 __all__ = (
     'DNSResolver',
@@ -154,7 +155,10 @@ class DNSResolver:
     def _callback(
         self, fut: asyncio.Future[_T], result: _T, errorno: int | None
     ) -> None:
-        if fut.cancelled():
+        # The future can already be done if pycares raised synchronously
+        # and _capture_ares_error set the exception before c-ares delivered
+        # the same error through this callback.
+        if fut.done():
             return
         if errorno is not None:
             fut.set_exception(
@@ -187,14 +191,20 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for query that converts results to compatible format."""
-        if fut.cancelled():
+        # See _callback for why we guard on done() rather than cancelled().
+        if fut.done():
             return
         if errorno is not None:
             fut.set_exception(
                 error.DNSError(errorno, pycares.errno.strerror(errorno))
             )
+            return
+        try:
+            converted = convert_result(result, qtype)
+        except error.DNSError as exc:
+            fut.set_exception(exc)
         else:
-            fut.set_result(convert_result(result, qtype))
+            fut.set_result(converted)
 
     def _get_query_future_callback(
         self, qtype: int
@@ -212,6 +222,25 @@ class DNSResolver:
         else:
             cb = functools.partial(self._query_callback, future, qtype)
         return future, cb
+
+    @contextlib.contextmanager
+    def _capture_ares_error(self, fut: asyncio.Future[_T]) -> Iterator[None]:
+        # When pycares raises synchronously (e.g. ARES_EBADNAME for a
+        # malformed hostname), c-ares may also invoke the callback first,
+        # leaving the future already done. Route the error through the
+        # future so callers can rely on `await` to raise.
+        try:
+            yield
+        except pycares.AresError as exc:
+            if fut.done():
+                return
+            # pycares always raises (errno, message), but be defensive:
+            # an args-less AresError should still resolve the future to
+            # avoid an indefinite hang on `await`.
+            errno = exc.args[0] if exc.args else error.ARES_EFORMERR
+            fut.set_exception(
+                error.DNSError(errno, pycares.errno.strerror(errno))
+            )
 
     @overload
     def query(
@@ -279,12 +308,13 @@ class DNSResolver:
                 raise ValueError(f'invalid query class: {qclass}') from e
 
         fut, cb = self._get_query_future_callback(qtype_int)
-        if qclass_int is not None:
-            self._channel.query(
-                host, qtype_int, query_class=qclass_int, callback=cb
-            )
-        else:
-            self._channel.query(host, qtype_int, callback=cb)
+        with self._capture_ares_error(fut):
+            if qclass_int is not None:
+                self._channel.query(
+                    host, qtype_int, query_class=qclass_int, callback=cb
+                )
+            else:
+                self._channel.query(host, qtype_int, callback=cb)
         return fut
 
     def query_dns(
@@ -304,12 +334,13 @@ class DNSResolver:
 
         fut: asyncio.Future[pycares.DNSResult]
         fut, cb = self._get_future_callback()
-        if qclass_int is not None:
-            self._channel.query(
-                host, qtype_int, query_class=qclass_int, callback=cb
-            )
-        else:
-            self._channel.query(host, qtype_int, callback=cb)
+        with self._capture_ares_error(fut):
+            if qclass_int is not None:
+                self._channel.query(
+                    host, qtype_int, query_class=qclass_int, callback=cb
+                )
+            else:
+                self._channel.query(host, qtype_int, callback=cb)
         return fut
 
     def _gethostbyname_callback(
@@ -320,7 +351,8 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for gethostbyname that converts AddrInfoResult."""
-        if fut.cancelled():
+        # See _callback for why we guard on done() rather than cancelled().
+        if fut.done():
             return
         if errorno is not None:
             fut.set_exception(
@@ -361,7 +393,8 @@ class DNSResolver:
             )
         else:
             cb = functools.partial(self._gethostbyname_callback, fut, host)
-        self._channel.getaddrinfo(host, None, family=family, callback=cb)
+        with self._capture_ares_error(fut):
+            self._channel.getaddrinfo(host, None, family=family, callback=cb)
         return fut
 
     def getaddrinfo(
@@ -375,15 +408,16 @@ class DNSResolver:
     ) -> asyncio.Future[pycares.AddrInfoResult]:
         fut: asyncio.Future[pycares.AddrInfoResult]
         fut, cb = self._get_future_callback()
-        self._channel.getaddrinfo(
-            host,
-            port,
-            family=family,
-            type=type,
-            proto=proto,
-            flags=flags,
-            callback=cb,
-        )
+        with self._capture_ares_error(fut):
+            self._channel.getaddrinfo(
+                host,
+                port,
+                family=family,
+                type=type,
+                proto=proto,
+                flags=flags,
+                callback=cb,
+            )
         return fut
 
     def getnameinfo(
@@ -393,13 +427,15 @@ class DNSResolver:
     ) -> asyncio.Future[pycares.NameInfoResult]:
         fut: asyncio.Future[pycares.NameInfoResult]
         fut, cb = self._get_future_callback()
-        self._channel.getnameinfo(sockaddr, flags, callback=cb)
+        with self._capture_ares_error(fut):
+            self._channel.getnameinfo(sockaddr, flags, callback=cb)
         return fut
 
     def gethostbyaddr(self, name: str) -> asyncio.Future[pycares.HostResult]:
         fut: asyncio.Future[pycares.HostResult]
         fut, cb = self._get_future_callback()
-        self._channel.gethostbyaddr(name, callback=cb)
+        with self._capture_ares_error(fut):
+            self._channel.gethostbyaddr(name, callback=cb)
         return fut
 
     def cancel(self) -> None:
