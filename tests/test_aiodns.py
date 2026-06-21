@@ -376,7 +376,7 @@ def test_win32_inapproperate_event_loop() -> None:
     """
     # Create a ProactorEventLoop to trigger the error
     mock_loop = unittest.mock.MagicMock(spec=asyncio.AbstractEventLoop)
-    mock_loop.__class__ = asyncio.ProactorEventLoop
+    mock_loop.__class__ = asyncio.ProactorEventLoop  # type: ignore[attr-defined]
 
     # Mock channel creation to fail on first call (event_thread),
     # triggering the fallback path where SelectorEventLoop is required
