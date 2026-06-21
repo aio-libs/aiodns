@@ -119,10 +119,10 @@ class DNSResolver:
         # Fall back to sock_state_cb
         # We cannot use a ProactorEventLoop because it does not
         # provide an add_reader or add_writer function to utilize.
-        if sys.platform == 'win32' and isinstance(
-            self.loop, asyncio.ProactorEventLoop
-        ):
-            raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
+        if sys.platform == 'win32':
+            if hasattr(asyncio, 'ProactorEventLoop'):
+                if isinstance(self.loop, asyncio.ProactorEventLoop):
+                    raise RuntimeError(WINDOWS_SELECTOR_ERR_MSG)
         # Use weak reference for deterministic cleanup. Without it there's a
         # reference cycle (DNSResolver -> _channel -> callback -> DNSResolver).
         # Python 3.4+ can handle cycles with __del__, but weak ref ensures
