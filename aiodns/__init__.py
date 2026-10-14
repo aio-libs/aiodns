@@ -85,6 +85,10 @@ class DNSResolver:
             assert self.loop is not None
         kwargs.pop('sock_state_cb', None)
         timeout = kwargs.pop('timeout', None)
+        if timeout is None or timeout < 0 or timeout > 1:
+            timeout = 1
+        elif timeout == 0:
+            timeout = 0.1
         self._timeout = timeout
         self._event_thread, self._channel = self._make_channel(**kwargs)
         if nameservers:
@@ -483,13 +487,7 @@ class DNSResolver:
             self._timer = None
 
     def _start_timer(self) -> None:
-        timeout = self._timeout
-        if timeout is None or timeout < 0 or timeout > 1:
-            timeout = 1
-        elif timeout == 0:
-            timeout = 0.1
-
-        self._timer = self.loop.call_later(timeout, self._timer_cb)
+        self._timer = self.loop.call_later(self._timeout, self._timer_cb)
 
     def _cleanup(self) -> None:
         """Cleanup timers and file descriptors when closing resolver."""
