@@ -117,11 +117,14 @@ need automatic cleanup for short-lived resolver instances, such as in tests or o
 Note for Windows users
 ======================
 
-This library requires the use of an ``asyncio.SelectorEventLoop`` or ``winloop`` on Windows
+This library requires the use of anything but a ``ProactorEventLoop`` on Windows
 **only** when using a custom build of ``pycares`` that links against a system-
 provided ``c-ares`` library **without** thread-safety support. This is because
 non-thread-safe builds of ``c-ares`` are incompatible with the default
-``ProactorEventLoop`` on Windows.
+``ProactorEventLoop`` because ``ProactorEventLoop`` does not implement an
+``add_reader`` or ``add_writer`` function for pycares to safely tarverse
+it's own callbacks with.
+
 
 If you're using the official prebuilt ``pycares`` wheels on PyPI (version 4.7.0 or
 later), which include a thread-safe version of ``c-ares``, this limitation does
