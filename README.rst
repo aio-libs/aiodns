@@ -32,7 +32,7 @@ The following query types are supported: A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS
 
 
 For a bounded example using TXT lookups for sender-DNS troubleshooting, see
-`Email-related TXT observations <examples/email_dns_txt.rst>`_. It keeps DNS
+`Email-related TXT observations <https://github.com/aio-libs/aiodns/blob/master/examples/email_dns_txt.rst>`_. It keeps DNS
 errors and TXT resource records separate and does not claim authentication
 results or mailbox deliverability.
 

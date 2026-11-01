@@ -11,7 +11,10 @@ Run::
 
 Obtain the actual selector from a DKIM-Signature header or the sender's provider
 configuration. Omit ``--selector`` to skip that lookup, rather than guessing
-common names. The domain is a sender domain, not an email address or a URL.
+common names. The domain is a sender domain, not an email address or a URL. Supply ASCII
+DNS names (IDNA2008 A-labels for internationalized domains); Unicode input is
+rejected before any DNS lookup instead of being remapped with IDNA2003.
+The selector must also be supplied as ASCII.
 
 The output preserves separate TXT resource records, their TTLs, DNS errors and
 the per-query deadline. TXT character-strings within one RR are already combined

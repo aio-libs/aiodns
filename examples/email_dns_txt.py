@@ -49,11 +49,19 @@ async def observe_txt(resolver, owner, deadline=3.0):
     return {'owner': owner, 'status': 'answer', 'records': records}
 
 
+def ascii_name(value):
+    """Require ASCII instead of remapping Unicode with IDNA2003."""
+    value = value.rstrip('.')
+    if not value or not value.isascii():
+        raise ValueError('Use a nonempty ASCII DNS name or IDNA2008 A-label')
+    return value
+
+
 async def main(domain, selector=None):
-    domain = domain.rstrip('.').encode('idna').decode('ascii')
+    domain = ascii_name(domain)
     owners = [domain + '.', '_dmarc.' + domain + '.']
     if selector:
-        selector = selector.rstrip('.').encode('idna').decode('ascii')
+        selector = ascii_name(selector)
         owners.append(selector + '._domainkey.' + domain + '.')
     # One resolver is reused for all queries. A short-lived CLI is one of the
     # cases where the async context manager gives useful deterministic cleanup.
