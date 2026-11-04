@@ -31,6 +31,10 @@ Example
 The following query types are supported: A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT.
 
 
+Runnable examples and their usage notes are available in the
+`examples directory <https://github.com/aio-libs/aiodns/tree/master/examples>`_.
+
+
 API
 ===
 
