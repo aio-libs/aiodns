@@ -56,6 +56,16 @@ class AresQueryCNAMEResult:
 
 
 @dataclass(frozen=True, slots=True)
+class AresQueryHTTPSResult:
+    """HTTPS record result (pycares 4.x compat)."""
+
+    priority: int
+    target: str
+    params: list[tuple[int, bytes]]
+    ttl: int
+
+
+@dataclass(frozen=True, slots=True)
 class AresQueryMXResult:
     """MX record result (pycares 4.x compat)."""
 
@@ -69,6 +79,17 @@ class AresQueryNSResult:
     """NS record result (pycares 4.x compat)."""
 
     host: str
+    ttl: int
+
+
+@dataclass(frozen=True, slots=True)
+class AresQueryTLSAResult:
+    """TLSA record result (pycares 4.x compat)."""
+
+    cert_usage: int
+    selector: int
+    matching_type: int
+    cert_association_data: bytes
     ttl: int
 
 
@@ -151,8 +172,10 @@ ConvertedRecord = Union[
     AresQueryAResult,
     AresQueryAAAAResult,
     AresQueryCNAMEResult,
+    AresQueryHTTPSResult,
     AresQueryMXResult,
     AresQueryNSResult,
+    AresQueryTLSAResult,
     AresQueryTXTResult,
     AresQuerySOAResult,
     AresQuerySRVResult,
@@ -167,8 +190,10 @@ QueryResult = Union[
     list[AresQueryAResult],
     list[AresQueryAAAAResult],
     AresQueryCNAMEResult,
+    list[AresQueryHTTPSResult],
     list[AresQueryMXResult],
     list[AresQueryNSResult],
+    list[AresQueryTLSAResult],
     list[AresQueryTXTResult],
     AresQuerySOAResult,
     list[AresQuerySRVResult],
@@ -247,6 +272,23 @@ def _convert_record(record: pycares.DNSRecord) -> ConvertedRecord:
     if record_type == pycares.QUERY_TYPE_PTR:
         ptr_data = cast(pycares.PTRRecordData, record.data)
         return AresQueryPTRResult(name=ptr_data.dname, ttl=ttl, aliases=[])
+    if record_type == pycares.QUERY_TYPE_HTTPS:
+        https_data = cast(pycares.HTTPSRecordData, record.data)
+        return AresQueryHTTPSResult(
+            priority=https_data.priority,
+            target=https_data.target,
+            params=https_data.params,
+            ttl=ttl,
+        )
+    if record_type == pycares.QUERY_TYPE_TLSA:
+        tlsa_data = cast(pycares.TLSARecordData, record.data)
+        return AresQueryTLSAResult(
+            cert_usage=tlsa_data.cert_usage,
+            selector=tlsa_data.selector,
+            matching_type=tlsa_data.matching_type,
+            cert_association_data=tlsa_data.cert_association_data,
+            ttl=ttl,
+        )
     # Return raw record for unknown types
     return record
 

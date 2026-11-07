@@ -21,12 +21,14 @@ from aiodns.compat import (
     AresQueryAAAAResult,
     AresQueryAResult,
     AresQueryCNAMEResult,
+    AresQueryHTTPSResult,
     AresQueryMXResult,
     AresQueryNAPTRResult,
     AresQueryNSResult,
     AresQueryPTRResult,
     AresQuerySOAResult,
     AresQuerySRVResult,
+    AresQueryTLSAResult,
     AresQueryTXTResult,
 )
 
@@ -140,6 +142,20 @@ class DNSTest(unittest.TestCase):
         self.assertTrue(result)
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], AresQuerySRVResult)
+
+    def test_query_https(self) -> None:
+        f = self.resolver.query('cloudflare.com', 'HTTPS')
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], AresQueryHTTPSResult)
+
+    def test_query_tlsa(self) -> None:
+        f = self.resolver.query('_25._tcp.mail.ietf.org', 'TLSA')
+        result = self.loop.run_until_complete(f)
+        self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], AresQueryTLSAResult)
 
     def test_query_naptr(self) -> None:
         f = self.resolver.query('sip2sip.info', 'NAPTR')

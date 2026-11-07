@@ -21,12 +21,14 @@ from .compat import (
     AresQueryAResult,
     AresQueryCAAResult,
     AresQueryCNAMEResult,
+    AresQueryHTTPSResult,
     AresQueryMXResult,
     AresQueryNAPTRResult,
     AresQueryNSResult,
     AresQueryPTRResult,
     AresQuerySOAResult,
     AresQuerySRVResult,
+    AresQueryTLSAResult,
     AresQueryTXTResult,
     QueryResult,
     convert_result,
@@ -54,12 +56,14 @@ query_type_map = {
     'ANY': pycares.QUERY_TYPE_ANY,
     'CAA': pycares.QUERY_TYPE_CAA,
     'CNAME': pycares.QUERY_TYPE_CNAME,
+    'HTTPS': pycares.QUERY_TYPE_HTTPS,
     'MX': pycares.QUERY_TYPE_MX,
     'NAPTR': pycares.QUERY_TYPE_NAPTR,
     'NS': pycares.QUERY_TYPE_NS,
     'PTR': pycares.QUERY_TYPE_PTR,
     'SOA': pycares.QUERY_TYPE_SOA,
     'SRV': pycares.QUERY_TYPE_SRV,
+    'TLSA': pycares.QUERY_TYPE_TLSA,
     'TXT': pycares.QUERY_TYPE_TXT,
 }
 
@@ -260,6 +264,10 @@ class DNSResolver:
     ) -> asyncio.Future[AresQueryCNAMEResult]: ...
     @overload
     def query(
+        self, host: str, qtype: Literal['HTTPS'], qclass: str | None = ...
+    ) -> asyncio.Future[list[AresQueryHTTPSResult]]: ...
+    @overload
+    def query(
         self, host: str, qtype: Literal['MX'], qclass: str | None = ...
     ) -> asyncio.Future[list[AresQueryMXResult]]: ...
     @overload
@@ -282,6 +290,10 @@ class DNSResolver:
     def query(
         self, host: str, qtype: Literal['SRV'], qclass: str | None = ...
     ) -> asyncio.Future[list[AresQuerySRVResult]]: ...
+    @overload
+    def query(
+        self, host: str, qtype: Literal['TLSA'], qclass: str | None = ...
+    ) -> asyncio.Future[list[AresQueryTLSAResult]]: ...
     @overload
     def query(
         self, host: str, qtype: Literal['TXT'], qclass: str | None = ...
