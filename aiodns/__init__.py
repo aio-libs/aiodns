@@ -442,36 +442,34 @@ class DNSResolver:
         self._channel.cancel()
 
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
+        if readable and fd not in self._read_fds:
+            self.loop.add_reader(
+                fd, self._channel.process_fd, fd, pycares.ARES_SOCKET_BAD
+            )
+            self._read_fds.add(fd)
+        elif not readable and fd in self._read_fds:
+            self._read_fds.discard(fd)
+            self.loop.remove_reader(fd)
+
+        if writable and fd not in self._write_fds:
+            self.loop.add_writer(
+                fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
+            )
+            self._write_fds.add(fd)
+        elif not writable and fd in self._write_fds:
+            self._write_fds.discard(fd)
+            self.loop.remove_writer(fd)
+
         if readable or writable:
-            if readable:
-                self.loop.add_reader(
-                    fd, self._channel.process_fd, fd, pycares.ARES_SOCKET_BAD
-                )
-                self._read_fds.add(fd)
-            if writable:
-                self.loop.add_writer(
-                    fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
-                )
-                self._write_fds.add(fd)
             if self._timer is None:
                 self._start_timer()
-        else:
-            # socket is now closed
-            if fd in self._read_fds:
-                self._read_fds.discard(fd)
-                self.loop.remove_reader(fd)
-
-            if fd in self._write_fds:
-                self._write_fds.discard(fd)
-                self.loop.remove_writer(fd)
-
-            if (
-                not self._read_fds
-                and not self._write_fds
-                and self._timer is not None
-            ):
-                self._timer.cancel()
-                self._timer = None
+        elif (
+            not self._read_fds
+            and not self._write_fds
+            and self._timer is not None
+        ):
+            self._timer.cancel()
+            self._timer = None
 
     def _timer_cb(self) -> None:
         if self._read_fds or self._write_fds:
