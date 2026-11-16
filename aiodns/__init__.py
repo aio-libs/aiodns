@@ -10,7 +10,7 @@ import warnings
 import weakref
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import pycares
 
@@ -92,6 +92,7 @@ class DNSResolver:
         self._read_fds: set[int] = set()
         self._write_fds: set[int] = set()
         self._timer: asyncio.TimerHandle | None = None
+        self._pending_queries: set[asyncio.Future[Any]] = set()
         self._closed = False
 
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
@@ -155,6 +156,7 @@ class DNSResolver:
     def _callback(
         self, fut: asyncio.Future[_T], result: _T, errorno: int | None
     ) -> None:
+        self._on_query_complete(fut)
         # The future can already be done if pycares raised synchronously
         # and _capture_ares_error set the exception before c-ares delivered
         # the same error through this callback.
@@ -191,6 +193,7 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for query that converts results to compatible format."""
+        self._on_query_complete(fut)
         # See _callback for why we guard on done() rather than cancelled().
         if fut.done():
             return
@@ -229,9 +232,12 @@ class DNSResolver:
         # malformed hostname), c-ares may also invoke the callback first,
         # leaving the future already done. Route the error through the
         # future so callers can rely on `await` to raise.
+        if not self._event_thread:
+            self._pending_queries.add(fut)
         try:
             yield
         except pycares.AresError as exc:
+            self._pending_queries.discard(fut)
             if fut.done():
                 return
             # pycares always raises (errno, message), but be defensive:
@@ -241,6 +247,11 @@ class DNSResolver:
             fut.set_exception(
                 error.DNSError(errno, pycares.errno.strerror(errno))
             )
+        except BaseException:
+            self._pending_queries.discard(fut)
+            raise
+        finally:
+            self._schedule_timer()
 
     @overload
     def query(
@@ -351,6 +362,7 @@ class DNSResolver:
         errorno: int | None,
     ) -> None:
         """Callback for gethostbyname that converts AddrInfoResult."""
+        self._on_query_complete(fut)
         # See _callback for why we guard on done() rather than cancelled().
         if fut.done():
             return
@@ -443,18 +455,26 @@ class DNSResolver:
 
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
         if readable or writable:
+            # Idle STAYOPEN sockets must not keep the resolver alive.
+            weak_self = weakref.ref(self)
+
+            def process_fd(read_fd: int, write_fd: int) -> None:
+                this = weak_self()
+                if this is not None:
+                    this._process_fd(read_fd, write_fd)
+
             if readable:
                 self.loop.add_reader(
-                    fd, self._channel.process_fd, fd, pycares.ARES_SOCKET_BAD
+                    fd, process_fd, fd, pycares.ARES_SOCKET_BAD
                 )
                 self._read_fds.add(fd)
             if writable:
                 self.loop.add_writer(
-                    fd, self._channel.process_fd, pycares.ARES_SOCKET_BAD, fd
+                    fd, process_fd, pycares.ARES_SOCKET_BAD, fd
                 )
                 self._write_fds.add(fd)
             if self._timer is None:
-                self._start_timer()
+                self._schedule_timer()
         else:
             # socket is now closed
             if fd in self._read_fds:
@@ -473,23 +493,42 @@ class DNSResolver:
                 self._timer.cancel()
                 self._timer = None
 
+    def _process_fd(self, read_fd: int, write_fd: int) -> None:
+        self._channel.process_fd(read_fd, write_fd)
+        # A reply can start a follow-up query with an earlier deadline
+        # without completing the parent query or changing socket state.
+        self._schedule_timer()
+
     def _timer_cb(self) -> None:
-        if self._read_fds or self._write_fds:
-            self._channel.process_fd(
-                pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD
-            )
-            self._start_timer()
-        else:
-            self._timer = None
+        self._timer = None
+        if self._closed:
+            return
+        self._process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
 
-    def _start_timer(self) -> None:
-        timeout = self._timeout
-        if timeout is None or timeout < 0 or timeout > 1:
-            timeout = 1
-        elif timeout == 0:
-            timeout = 0.1
+    def _schedule_timer(self) -> None:
+        if self._closed or self._event_thread:
+            return
 
-        self._timer = self.loop.call_later(timeout, self._timer_cb)
+        if not self._pending_queries:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+            return
+
+        timeout = cast(Callable[[], float], self._channel.timeout)()
+        deadline = self.loop.time() + timeout
+        if self._timer is not None:
+            # An earlier wakeup is safe; only rearm for a sooner deadline.
+            if self._timer.when() <= deadline:
+                return
+            self._timer.cancel()
+        self._timer = self.loop.call_at(deadline, self._timer_cb)
+
+    def _on_query_complete(self, future: asyncio.Future[Any]) -> None:
+        # Future cancellation does not cancel the underlying c-ares query.
+        # Only a native callback (or a submission error) ends native work.
+        self._pending_queries.discard(future)
+        self._schedule_timer()
 
     def _cleanup(self) -> None:
         """Cleanup timers and file descriptors when closing resolver."""
@@ -511,6 +550,7 @@ class DNSResolver:
         self._read_fds.clear()
         self._write_fds.clear()
         self._channel.close()
+        self._pending_queries.clear()
 
     async def close(self) -> None:
         """
