@@ -1153,6 +1153,10 @@ def test_sock_state_cb_and_timer_cb() -> None:
         ):
             resolver = aiodns.DNSResolver(loop=loop, timeout=0)
             assert resolver._event_thread is False
+            channel = unittest.mock.Mock()
+            channel.timeout.return_value = 1
+            resolver._channel = channel
+            resolver._pending_queries.add(loop.create_future())
 
             # Test writable only (readable=False, writable=True)
             resolver._sock_state_cb(fd1, False, True)
@@ -1177,6 +1181,7 @@ def test_sock_state_cb_and_timer_cb() -> None:
             resolver._sock_state_cb(fd2, False, False)
             assert fd2 not in resolver._read_fds
             assert fd2 not in resolver._write_fds
+            resolver._pending_queries.clear()
 
             # Timer should be cancelled when no fds left
             assert resolver._timer is None
