@@ -1368,5 +1368,115 @@ async def test_capture_ares_error_leaves_done_future_untouched() -> None:
             )
 
 
+@pytest.mark.parametrize(
+    (
+        'states',
+        'read_fds',
+        'write_fds',
+        'add_reader',
+        'remove_reader',
+        'add_writer',
+        'remove_writer',
+    ),
+    [
+        ([(False, False)], set(), set(), 0, 0, 0, 0),
+        ([(True, False), (True, False)], {17}, set(), 1, 0, 0, 0),
+        ([(False, True), (False, True)], set(), {17}, 0, 0, 1, 0),
+        ([(True, False), (False, True)], set(), {17}, 1, 1, 1, 0),
+        ([(False, True), (True, False)], {17}, set(), 1, 0, 1, 1),
+        ([(True, True), (True, False)], {17}, set(), 1, 0, 1, 1),
+        ([(True, True), (False, True)], set(), {17}, 1, 1, 1, 0),
+        (
+            [(True, True), (False, False), (False, False)],
+            set(),
+            set(),
+            1,
+            1,
+            1,
+            1,
+        ),
+    ],
+)
+def test_socket_state_callback_tracks_readiness_snapshots(
+    states: list[tuple[bool, bool]],
+    read_fds: set[int],
+    write_fds: set[int],
+    add_reader: int,
+    remove_reader: int,
+    add_writer: int,
+    remove_writer: int,
+) -> None:
+    loop = unittest.mock.Mock()
+    resolver = aiodns.DNSResolver.__new__(aiodns.DNSResolver)
+    resolver.loop = loop
+    resolver._channel = unittest.mock.Mock()
+    resolver._timeout = 1
+    resolver._read_fds = set()
+    resolver._write_fds = set()
+    resolver._timer = None
+    resolver._closed = True
+
+    for readable, writable in states:
+        resolver._sock_state_cb(17, readable, writable)
+
+    assert resolver._read_fds == read_fds
+    assert resolver._write_fds == write_fds
+    assert loop.add_reader.call_count == add_reader
+    assert loop.remove_reader.call_count == remove_reader
+    assert loop.add_writer.call_count == add_writer
+    assert loop.remove_writer.call_count == remove_writer
+
+
+def test_read_only_transition_removes_writer_callback_on_real_loop() -> None:
+    loop = asyncio.SelectorEventLoop()
+    reader, writer = socket.socketpair()
+    channel = unittest.mock.Mock()
+    resolver = aiodns.DNSResolver.__new__(aiodns.DNSResolver)
+    resolver.loop = loop
+    resolver._channel = channel
+    resolver._timeout = 1
+    resolver._read_fds = set()
+    resolver._write_fds = set()
+    resolver._timer = None
+    resolver._closed = True
+    try:
+        resolver._sock_state_cb(writer.fileno(), True, True)
+        resolver._sock_state_cb(writer.fileno(), True, False)
+        loop.run_until_complete(asyncio.sleep(0.01))
+        channel.process_fd.assert_not_called()
+    finally:
+        resolver._sock_state_cb(writer.fileno(), False, False)
+        reader.close()
+        writer.close()
+        loop.close()
+
+
+def test_socket_state_timer_lives_until_all_descriptors_close() -> None:
+    loop = unittest.mock.Mock()
+    timer = unittest.mock.Mock()
+    loop.call_later.return_value = timer
+    resolver = aiodns.DNSResolver.__new__(aiodns.DNSResolver)
+    resolver.loop = loop
+    resolver._channel = unittest.mock.Mock()
+    resolver._timeout = 1
+    resolver._read_fds = set()
+    resolver._write_fds = set()
+    resolver._timer = None
+    resolver._closed = True
+
+    resolver._sock_state_cb(17, True, False)
+    first_timer = resolver._timer
+    resolver._sock_state_cb(18, False, True)
+    assert resolver._timer is first_timer
+    assert loop.call_later.call_count == 1
+
+    resolver._sock_state_cb(17, False, False)
+    timer.cancel.assert_not_called()
+    assert resolver._timer is first_timer
+    resolver._sock_state_cb(18, False, False)
+    timer.cancel.assert_called_once_with()
+    assert resolver._timer is None
+
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main(verbosity=2)
