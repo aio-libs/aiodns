@@ -94,6 +94,13 @@ class DNSResolver:
         self._timer: asyncio.TimerHandle | None = None
         self._closed = False
 
+        timeout = self._timeout
+        if timeout is None or timeout < 0 or timeout > 1:
+            timeout = 1
+        elif timeout == 0:
+            timeout = 0.1
+        self._handle_timeout = timeout
+
     def _make_channel(self, **kwargs: Any) -> tuple[bool, pycares.Channel]:
         # pycares 5+ uses event_thread by default when sock_state_cb
         # is not provided
@@ -483,13 +490,9 @@ class DNSResolver:
             self._timer = None
 
     def _start_timer(self) -> None:
-        timeout = self._timeout
-        if timeout is None or timeout < 0 or timeout > 1:
-            timeout = 1
-        elif timeout == 0:
-            timeout = 0.1
-
-        self._timer = self.loop.call_later(timeout, self._timer_cb)
+        self._timer = self.loop.call_later(
+            self._handle_timeout, self._timer_cb
+        )
 
     def _cleanup(self) -> None:
         """Cleanup timers and file descriptors when closing resolver."""
